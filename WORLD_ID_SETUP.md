@@ -1,4 +1,4 @@
-# World ID & MiniKit Authentication Setup Guide
+# Minesweeper Game - World ID Authentication Setup Guide
 
 ## Environment Variables
 
@@ -71,21 +71,14 @@ The implementation follows World ID best practices with **hybrid authentication 
 
 ### 📱 **World App Environment (MiniKit)**
 
-- **Primary**: Wallet Auth - Quick login using World App wallet
-
-  - **Method**: Uses `MiniKit.commandsAsync.walletAuth()`
-  - **Benefits**: Native SIWE support, provides user info automatically
-  - **Security**: Server-side verification with nonce-based challenge-response
-
-- **Secondary**: World ID Verification - Human verification for bot-free gaming
-  - **Method**: Uses `MiniKit.commandsAsync.verify()` with incognito actions
-  - **Benefits**: Ensures only verified humans can play
-  - **Security**: Server-side proof validation using `verifyCloudProof`
+- **Purpose**: World ID verification for users in World App
+- **Method**: Uses `MiniKit.commandsAsync.verify()` with incognito actions
+- **Benefits**: Native World App integration, seamless verification
+- **Security**: Server-side proof validation using `verifyCloudProof`
 
 ## Key Features
 
 - ✅ **Hybrid Authentication** - IDKit for browsers, MiniKit for World App
-- ✅ **Primary Wallet Authentication** (World App only)
 - ✅ **World ID Verification** for both environments
 - ✅ **Server-side validation** for all authentication methods
 - ✅ **Username input** with validation for World ID verification
@@ -93,6 +86,7 @@ The implementation follows World ID best practices with **hybrid authentication 
 - ✅ **Responsive UI** with loading states
 - ✅ **Environment detection** - automatically shows appropriate verification method
 - ✅ **Proper security** - all proofs verified server-side
+- ✅ **Minesweeper Game** - Complete game implementation with authentication
 
 ## Usage
 
@@ -104,17 +98,16 @@ The implementation follows World ID best practices with **hybrid authentication 
 
 ### 📱 **In World App**
 
-1. **Quick Login**: Users can authenticate instantly with their World App wallet
-2. **World ID Verification**: Users can optionally verify their human identity using World ID
-3. **Game Access**: Both methods provide access to the minesweeper game
-4. **User Info**: Wallet auth provides user profile information automatically
+1. **World ID Verification**: Users verify their human identity using World ID
+2. **Username Input**: Enter username for verification signal
+3. **Game Access**: After successful verification, access the minesweeper game
 
 ## Security Notes
 
 - All authentication proofs are verified server-side
-- Wallet authentication uses SIWE (Sign-In with Ethereum) for security
 - World ID verification uses incognito actions to prevent replay attacks
 - Never trust client-side data - always verify on the backend
+- Simplified auth system focused on World ID verification only
 
 ## Troubleshooting
 

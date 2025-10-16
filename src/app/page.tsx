@@ -15,7 +15,7 @@ import { signIn } from "next-auth/react";
 
 export default function Home() {
   const [username, setUsername] = useState("");
-  const [verificationState, setVerificationState] = useState<
+  const [authState, setAuthState] = useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function Home() {
   const actionId = process.env.NEXT_PUBLIC_ACTION || "";
 
   const verifyWithServer = useCallback(
-    async (payload: ISuccessResult, username: string) => {
+    async (payload: ISuccessResult, signal: string) => {
       const response = await fetch("/api/verify-proof", {
         method: "POST",
         headers: {
@@ -36,7 +36,7 @@ export default function Home() {
         body: JSON.stringify({
           payload,
           action: actionId,
-          signal: username,
+          signal,
         }),
       });
       const data = await response.json();
@@ -47,14 +47,98 @@ export default function Home() {
     [actionId]
   );
 
-  const handleWorldIDVerification = useCallback(async () => {
+  // ✅ CORRECT: Wallet Authentication for login (primary flow)
+  const handleWalletAuth = useCallback(async () => {
     if (!isInstalled) {
       setError("World App is not available");
       return;
     }
 
-    if (!username.trim()) {
-      setError("Please enter a username");
+    setAuthState("pending");
+    setError(null);
+
+    try {
+      // Step 1: Get a secure nonce from the backend
+      const nonceResponse = await fetch("/api/nonce");
+      const { nonce } = await nonceResponse.json();
+
+      // Step 2: Use wallet authentication with the nonce
+      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
+        nonce: nonce,
+        expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        notBefore: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+        statement: "Authenticate with World App to play Minesweeper",
+      });
+
+      if (finalPayload.status === "success") {
+        // Step 3: Verify the SIWE message with the backend
+        const verificationResponse = await fetch("/api/complete-siwe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            payload: finalPayload,
+            nonce,
+          }),
+        });
+
+        const verificationResult = await verificationResponse.json();
+
+        if (
+          verificationResult.status === "success" &&
+          verificationResult.isValid
+        ) {
+          // Step 4: Get additional user information using MiniKit helper functions
+          const userInfo = {
+            walletAddress: verificationResult.user.walletAddress,
+            username: username || "Anonymous",
+            profilePictureUrl: undefined as string | undefined,
+          };
+
+          try {
+            // Try to get user info by wallet address
+            const userByAddress = await MiniKit.getUserByAddress(
+              verificationResult.user.walletAddress
+            );
+            if (userByAddress) {
+              userInfo.username = userByAddress.username || userInfo.username;
+              userInfo.profilePictureUrl = userByAddress.profilePictureUrl;
+            }
+          } catch (error) {
+            console.log("Could not fetch additional user info:", error);
+            // Continue with basic info if helper function fails
+          }
+
+          // Step 5: Sign in with the verified user data
+          await signIn("credentials", {
+            walletAddress: userInfo.walletAddress,
+            username: userInfo.username,
+            profilePictureUrl: userInfo.profilePictureUrl,
+            redirect: false,
+          });
+
+          setAuthState("success");
+          router.push("/home");
+        } else {
+          throw new Error(verificationResult.message || "Verification failed");
+        }
+      } else {
+        throw new Error("Wallet authentication failed");
+      }
+    } catch (error) {
+      console.error("Wallet auth error:", error);
+      setError(
+        error instanceof Error ? error.message : "Authentication failed"
+      );
+      setAuthState("error");
+    }
+  }, [isInstalled, router, username]);
+
+  // ✅ CORRECT: World ID Verification for specific actions (optional)
+  const handleWorldIDVerification = useCallback(async () => {
+    if (!isInstalled) {
+      setError("World App is not available");
       return;
     }
 
@@ -63,13 +147,14 @@ export default function Home() {
       return;
     }
 
-    setVerificationState("pending");
+    setAuthState("pending");
     setError(null);
 
     try {
+      // Use verification for specific actions, not login
       const result = await MiniKit.commandsAsync.verify({
         action: actionId,
-        signal: username,
+        signal: username || "minesweeper-action",
         verification_level: VerificationLevel.Orb,
       });
 
@@ -78,23 +163,18 @@ export default function Home() {
         throw new Error("World ID verification did not complete.");
       }
 
-      await verifyWithServer(payload, username);
+      // Verify with server
+      await verifyWithServer(payload, username || "minesweeper-action");
 
-      // Sign in with the verified user
-      await signIn("credentials", {
-        username,
-        verified: "true",
-        redirect: false,
-      });
-
-      setVerificationState("success");
-      router.push("/home");
+      setAuthState("success");
+      // Note: This is for verification only, not authentication
+      console.log("World ID verification successful for action:", actionId);
     } catch (error) {
       console.error("Verification error:", error);
       setError(error instanceof Error ? error.message : "Verification failed");
-      setVerificationState("error");
+      setAuthState("error");
     }
-  }, [actionId, username, isInstalled, router, verifyWithServer]);
+  }, [actionId, username, isInstalled, verifyWithServer]);
 
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +187,7 @@ export default function Home() {
   // IDKit success handler for browser verification
   const handleIDKitSuccess = useCallback(
     async (result: ISuccessResult) => {
-      setVerificationState("pending");
+      setAuthState("pending");
       setError(null);
 
       try {
@@ -120,14 +200,14 @@ export default function Home() {
           redirect: false,
         });
 
-        setVerificationState("success");
+        setAuthState("success");
         router.push("/home");
       } catch (error) {
         console.error("IDKit verification error:", error);
         setError(
           error instanceof Error ? error.message : "Verification failed"
         );
-        setVerificationState("error");
+        setAuthState("error");
       }
     },
     [username, router, verifyWithServer]
@@ -143,57 +223,83 @@ export default function Home() {
 
         {isInstalled ? (
           <div className="w-full max-w-md space-y-4">
-            {/* MiniKit World ID Verification */}
+            {/* World App users: Wallet auth (primary) + optional verification */}
             <div className="text-center">
-              <h2 className="text-lg font-semibold mb-2">Verify Identity</h2>
+              <h2 className="text-lg font-semibold mb-2">Connect Wallet</h2>
               <p className="text-sm text-gray-600 mb-4">
-                Use World ID to verify you&apos;re human (MiniKit)
+                Use wallet authentication to play (recommended)
               </p>
             </div>
 
             <div>
               <input
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Enter your username (optional)"
                 value={username}
                 onChange={handleUsernameChange}
-                disabled={verificationState === "pending"}
+                disabled={authState === "pending"}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Username is optional - your wallet will provide your identity
+              </p>
             </div>
 
             <LiveFeedback
               label={{
-                failed: error || "Verification failed",
-                pending: "Verifying your identity...",
-                success: "Verification successful!",
+                failed: error || "Authentication failed",
+                pending: "Authenticating...",
+                success: "Authentication successful!",
               }}
               state={
-                verificationState === "pending"
+                authState === "pending"
                   ? "pending"
-                  : verificationState === "success"
+                  : authState === "success"
                   ? "success"
-                  : verificationState === "error"
+                  : authState === "error"
                   ? "failed"
                   : undefined
               }
             >
               <Button
-                onClick={handleWorldIDVerification}
-                disabled={verificationState === "pending" || !username.trim()}
+                onClick={handleWalletAuth}
+                disabled={authState === "pending"}
                 size="lg"
                 variant="primary"
                 className="w-full"
               >
-                {verificationState === "pending"
-                  ? "Verifying..."
-                  : "Verify with World ID (MiniKit)"}
+                {authState === "pending"
+                  ? "Authenticating..."
+                  : "Connect Wallet"}
               </Button>
             </LiveFeedback>
+
+            {/* Optional World ID Verification for specific actions */}
+            {actionId && (
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="text-center mb-3">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    Optional Verification
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Verify for specific actions
+                  </p>
+                </div>
+                <Button
+                  onClick={handleWorldIDVerification}
+                  disabled={authState === "pending"}
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                >
+                  Verify World ID (Optional)
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full max-w-md space-y-6">
-            {/* Browser Authentication - IDKit World ID Verification */}
+            {/* Browser users: World ID Kit QR code */}
             <div className="text-center">
               <h2 className="text-lg font-semibold mb-2">Verify Identity</h2>
               <p className="text-sm text-gray-600 mb-4">
@@ -207,7 +313,7 @@ export default function Home() {
                 placeholder="Enter your username"
                 value={username}
                 onChange={handleUsernameChange}
-                disabled={verificationState === "pending"}
+                disabled={authState === "pending"}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
@@ -229,25 +335,23 @@ export default function Home() {
                       success: "Verification successful!",
                     }}
                     state={
-                      verificationState === "pending"
+                      authState === "pending"
                         ? "pending"
-                        : verificationState === "success"
+                        : authState === "success"
                         ? "success"
-                        : verificationState === "error"
+                        : authState === "error"
                         ? "failed"
                         : undefined
                     }
                   >
                     <Button
                       onClick={open}
-                      disabled={
-                        verificationState === "pending" || !username.trim()
-                      }
+                      disabled={authState === "pending" || !username.trim()}
                       size="lg"
                       variant="primary"
                       className="w-full"
                     >
-                      {verificationState === "pending"
+                      {authState === "pending"
                         ? "Verifying..."
                         : "Verify with World ID (Browser)"}
                     </Button>

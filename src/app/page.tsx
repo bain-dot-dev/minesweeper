@@ -1,7 +1,6 @@
 "use client";
 
 import { Page } from "@/components/PageLayout";
-import { AuthButton } from "../components/AuthButton";
 import { Button, LiveFeedback } from "@worldcoin/mini-apps-ui-kit-react";
 import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";
 import { useMiniKit } from "@worldcoin/minikit-js/minikit-provider";
@@ -12,6 +11,7 @@ import {
 } from "@worldcoin/idkit";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -79,8 +79,16 @@ export default function Home() {
       }
 
       await verifyWithServer(payload, username);
+
+      // Sign in with the verified user
+      await signIn("credentials", {
+        username,
+        verified: "true",
+        redirect: false,
+      });
+
       setVerificationState("success");
-      router.push(`/home?username=${encodeURIComponent(username)}`);
+      router.push("/home");
     } catch (error) {
       console.error("Verification error:", error);
       setError(error instanceof Error ? error.message : "Verification failed");
@@ -104,8 +112,16 @@ export default function Home() {
 
       try {
         await verifyWithServer(result, username);
+
+        // Sign in with the verified user
+        await signIn("credentials", {
+          username,
+          verified: "true",
+          redirect: false,
+        });
+
         setVerificationState("success");
-        router.push(`/home?username=${encodeURIComponent(username)}`);
+        router.push("/home");
       } catch (error) {
         console.error("IDKit verification error:", error);
         setError(
@@ -126,75 +142,54 @@ export default function Home() {
         </div>
 
         {isInstalled ? (
-          <div className="w-full max-w-md space-y-6">
-            {/* Primary Authentication - Wallet Auth */}
+          <div className="w-full max-w-md space-y-4">
+            {/* MiniKit World ID Verification */}
             <div className="text-center">
-              <h2 className="text-lg font-semibold mb-2">Quick Login</h2>
+              <h2 className="text-lg font-semibold mb-2">Verify Identity</h2>
               <p className="text-sm text-gray-600 mb-4">
-                Use your World App wallet to authenticate
+                Use World ID to verify you&apos;re human (MiniKit)
               </p>
-              <AuthButton />
             </div>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
-              </div>
+            <div>
+              <input
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={handleUsernameChange}
+                disabled={verificationState === "pending"}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
             </div>
 
-            {/* Secondary Authentication - MiniKit World ID Verification */}
-            <div className="space-y-4">
-              <div className="text-center">
-                <h2 className="text-lg font-semibold mb-2">Verify Identity</h2>
-                <p className="text-sm text-gray-600 mb-4">
-                  Use World ID to verify you&apos;re human (MiniKit)
-                </p>
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={handleUsernameChange}
-                  disabled={verificationState === "pending"}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <LiveFeedback
-                label={{
-                  failed: error || "Verification failed",
-                  pending: "Verifying your identity...",
-                  success: "Verification successful!",
-                }}
-                state={
-                  verificationState === "pending"
-                    ? "pending"
-                    : verificationState === "success"
-                    ? "success"
-                    : verificationState === "error"
-                    ? "failed"
-                    : undefined
-                }
+            <LiveFeedback
+              label={{
+                failed: error || "Verification failed",
+                pending: "Verifying your identity...",
+                success: "Verification successful!",
+              }}
+              state={
+                verificationState === "pending"
+                  ? "pending"
+                  : verificationState === "success"
+                  ? "success"
+                  : verificationState === "error"
+                  ? "failed"
+                  : undefined
+              }
+            >
+              <Button
+                onClick={handleWorldIDVerification}
+                disabled={verificationState === "pending" || !username.trim()}
+                size="lg"
+                variant="primary"
+                className="w-full"
               >
-                <Button
-                  onClick={handleWorldIDVerification}
-                  disabled={verificationState === "pending" || !username.trim()}
-                  size="lg"
-                  variant="secondary"
-                  className="w-full"
-                >
-                  {verificationState === "pending"
-                    ? "Verifying..."
-                    : "Verify with World ID (MiniKit)"}
-                </Button>
-              </LiveFeedback>
-            </div>
+                {verificationState === "pending"
+                  ? "Verifying..."
+                  : "Verify with World ID (MiniKit)"}
+              </Button>
+            </LiveFeedback>
           </div>
         ) : (
           <div className="w-full max-w-md space-y-6">

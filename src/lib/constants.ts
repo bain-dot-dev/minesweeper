@@ -2,16 +2,16 @@
  * Game constants and configuration
  */
 
-// Cell number colors - classic Minesweeper styling
+// Cell number colors - Mission Impossible styling
 export const NUMBER_COLORS: Record<number, string> = {
-  1: '#0000FF', // Blue
-  2: '#008000', // Green
-  3: '#FF0000', // Red
-  4: '#000080', // Dark Blue
-  5: '#800000', // Maroon
-  6: '#008080', // Teal
-  7: '#000000', // Black
-  8: '#808080', // Gray
+  1: '#0066FF',  // Blue
+  2: '#10F970',  // Cyber Green
+  3: '#DC2626',  // MI Red
+  4: '#001A66',  // Dark Blue
+  5: '#7B2D00',  // Brown
+  6: '#00CED1',  // Cyan
+  7: '#000000',  // Black
+  8: '#808080',  // Gray
 };
 
 // Direction offsets for adjacent cells (8 directions)

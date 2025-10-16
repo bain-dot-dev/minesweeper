@@ -71,15 +71,43 @@ export function MinesweeperGame() {
         />
       </div>
 
-      {/* Instructions */}
-      <div className="bg-white rounded-lg p-4 shadow-md max-w-2xl w-full">
-        <h3 className="font-semibold text-lg mb-2">How to Play</h3>
-        <ul className="text-sm text-neutral-600 space-y-1">
-          <li>• <strong>Click</strong> to reveal a cell</li>
-          <li>• <strong>Right-click</strong> or <strong>long-press</strong> to flag a mine</li>
-          <li>• Numbers show how many mines are adjacent</li>
-          <li>• Clear all non-mine cells to win!</li>
+      {/* Mission Briefing */}
+      <div className="bg-gradient-to-br from-mi-black/95 to-mi-black/80 rounded-lg p-6 shadow-2xl max-w-2xl w-full border border-mi-red/30">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-2 h-2 bg-mi-red rounded-full animate-pulse" />
+          <h3
+            className="font-bold text-xl uppercase tracking-wide text-mi-cyber-green"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+          >
+            Mission Briefing
+          </h3>
+        </div>
+        <p className="text-sm text-mi-yellow mb-4 italic">
+          &ldquo;Agent, your mission is to locate and defuse all explosive devices. Proceed with extreme caution...&rdquo;
+        </p>
+        <ul className="text-sm text-mi-electric-blue space-y-2">
+          <li className="flex items-start gap-2">
+            <span className="text-mi-cyber-green">▸</span>
+            <span><strong className="text-white">Click</strong> to reveal sectors</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-mi-cyber-green">▸</span>
+            <span><strong className="text-white">Right-click</strong> or <strong className="text-white">long-press</strong> to mark threats</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-mi-cyber-green">▸</span>
+            <span>Numbers indicate <strong className="text-white">proximity to explosives</strong></span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-mi-cyber-green">▸</span>
+            <span><strong className="text-white">Neutralize all threats</strong> to complete the mission!</span>
+          </li>
         </ul>
+        <div className="mt-4 pt-4 border-t border-mi-red/20 text-center">
+          <p className="text-xs text-mi-orange/70 italic">
+            This message will self-destruct... just kidding. Good luck, Agent.
+          </p>
+        </div>
       </div>
 
       {/* Game Over Modal */}

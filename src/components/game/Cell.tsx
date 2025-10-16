@@ -8,7 +8,8 @@
 import { CellState } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { NUMBER_COLORS } from '@/lib/constants';
-import { Bookmark, Xmark } from 'iconoir-react';
+import { Bookmark } from 'iconoir-react';
+import { BombIcon } from './BombIcon';
 import { memo } from 'react';
 
 interface CellProps {
@@ -30,6 +31,18 @@ export const Cell = memo(function Cell({
   gameOver,
 }: CellProps) {
   const { x, y, isRevealed, isFlagged, isMine, adjacentMines } = cell;
+
+  // Determine threat level based on adjacent mines
+  const getThreatLevel = (): string => {
+    if (isRevealed || isMine) return '';
+    if (adjacentMines === 0) return 'safe';
+    if (adjacentMines <= 2) return 'low';
+    if (adjacentMines <= 4) return 'medium';
+    if (adjacentMines <= 6) return 'high';
+    return 'critical';
+  };
+
+  const threatLevel = getThreatLevel();
 
   // Handle click events
   const handleClick = () => {
@@ -68,7 +81,7 @@ export const Cell = memo(function Cell({
   // Cell content rendering
   const renderContent = () => {
     if (!isRevealed && isFlagged) {
-      return <Bookmark className="w-4 h-4 text-warning" />;
+      return <Bookmark className="w-4 h-4 text-warning animate-flag-place" />;
     }
 
     if (!isRevealed) {
@@ -76,14 +89,18 @@ export const Cell = memo(function Cell({
     }
 
     if (isMine) {
-      return <Xmark className="w-5 h-5 text-danger" />;
+      return <BombIcon className="w-6 h-6" isExploding={gameOver} />;
     }
 
     if (adjacentMines > 0) {
       return (
         <span
-          className="font-bold text-sm"
-          style={{ color: NUMBER_COLORS[adjacentMines] }}
+          className="font-bold text-base leading-none"
+          style={{
+            color: NUMBER_COLORS[adjacentMines],
+            fontFamily: "'Share Tech Mono', monospace",
+            textShadow: `0 0 3px ${NUMBER_COLORS[adjacentMines]}40`
+          }}
         >
           {adjacentMines}
         </span>
@@ -96,22 +113,24 @@ export const Cell = memo(function Cell({
   return (
     <button
       className={cn(
-        'cell aspect-square flex items-center justify-center border transition-all duration-150',
+        'mission-cell aspect-square flex items-center justify-center transition-all duration-150',
         'focus:outline-none focus:ring-2 focus:ring-primary',
         'min-w-[32px] min-h-[32px]',
-        !isRevealed && !gameOver && 'bg-neutral-100 hover:bg-neutral-200 shadow-sm',
-        !isRevealed && !gameOver && 'active:scale-95',
-        isRevealed && !isMine && 'bg-white',
-        isRevealed && isMine && 'bg-danger/10',
-        isFlagged && 'bg-warning/20',
-        'animate-cell-reveal'
+        isRevealed && 'revealed',
+        isFlagged && !isRevealed && 'flagged',
+        isRevealed && isMine && gameOver && 'exploded',
+        !isRevealed && !isFlagged && threatLevel && `threat-${threatLevel}`
       )}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
-      aria-label={`Cell ${x}, ${y}`}
+      aria-label={`Cell ${x}, ${y}${threatLevel ? `, Threat: ${threatLevel}` : ''}`}
       disabled={gameOver || isRevealed}
     >
+      {/* Threat Level Badge */}
+      {!isRevealed && !isFlagged && threatLevel && adjacentMines > 0 && (
+        <div className={cn('threat-badge', threatLevel)} />
+      )}
       {renderContent()}
     </button>
   );

@@ -3,17 +3,43 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #6366f1;
-  --secondary: #8b5cf6;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+
+  /* Mission Impossible Core Colors */
+  --mi-black: #0A0A0A;
+  --mi-red: #DC2626;
+  --mi-orange: #EA580C;
+  --mi-yellow: #FCD34D;
+  --mi-cyber-green: #10F970;
+  --mi-electric-blue: #00D4FF;
+
+  /* Classic Minesweeper Tribute */
+  --classic-gray: #C0C0C0;
+  --classic-border-light: #FFFFFF;
+  --classic-border-dark: #808080;
+  --classic-bg: #BDBDBD;
+
+  /* Legacy support */
+  --primary: #DC2626;
+  --secondary: #EA580C;
+  --success: #10F970;
+  --danger: #DC2626;
+  --warning: #FCD34D;
   --neutral-100: #f3f4f6;
   --neutral-200: #e5e7eb;
   --neutral-300: #d1d5db;
   --neutral-600: #4b5563;
   --neutral-700: #374151;
   --neutral-800: #1f2937;
+
+  /* Cell Number Colors (Classic with MI twist) */
+  --num-1: #0066FF;
+  --num-2: #10F970;
+  --num-3: #DC2626;
+  --num-4: #001A66;
+  --num-5: #7B2D00;
+  --num-6: #00CED1;
+  --num-7: #000000;
+  --num-8: #808080;
 }
 
 @theme inline {
@@ -42,20 +68,20 @@
 }
 
 body {
-  background: var(--background);
+  background: var(--mi-black);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Rajdhani', Arial, Helvetica, sans-serif;
 }
 
-/* Minesweeper Animations */
+/* Mission Impossible Animations */
 
 @keyframes cellReveal {
   from {
-    transform: scale(0.8) rotateY(180deg);
+    transform: scale(0.8);
     opacity: 0;
   }
   to {
-    transform: scale(1) rotateY(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -137,4 +163,303 @@ body {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+}
+
+/* Mission Impossible Enhanced Animations */
+
+@keyframes explode {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+    background: radial-gradient(circle, #DC2626 0%, #EA580C 50%, transparent 100%);
+  }
+  20% {
+    transform: scale(2);
+    background: radial-gradient(circle, #FFFF00 0%, #FF6B00 30%, #DC2626 60%, transparent 100%);
+    box-shadow: 0 0 40px #FF6B00;
+  }
+  50% {
+    transform: scale(3);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px) translateY(-1px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px) translateY(1px); }
+}
+
+@keyframes scan {
+  from { transform: translateY(0); opacity: 0.5; }
+  to { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes sweep {
+  from { left: -100%; }
+  to { left: 100%; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes glitch {
+  0%, 100% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+  20% {
+    transform: translate(-1px, 1px);
+    filter: hue-rotate(90deg);
+  }
+  40% {
+    transform: translate(-1px, -1px);
+    filter: hue-rotate(180deg);
+  }
+  60% {
+    transform: translate(1px, 1px);
+    filter: hue-rotate(270deg);
+  }
+  80% {
+    transform: translate(1px, -1px);
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes missionInit {
+  0% {
+    filter: brightness(0) contrast(2);
+    transform: scale(1.1);
+  }
+  50% {
+    filter: brightness(2) contrast(1.5);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes dramaticZoom {
+  0% {
+    transform: scale(1) rotate(0);
+    filter: blur(0);
+  }
+  50% {
+    transform: scale(1.5) rotate(2deg);
+    filter: blur(2px);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    filter: blur(0);
+  }
+}
+
+/* Mission Container */
+.mission-container {
+  background: var(--mi-black);
+  border: 2px solid var(--mi-red);
+  box-shadow:
+    0 0 40px rgba(220, 38, 38, 0.3),
+    inset 0 0 20px rgba(0, 212, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mission-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--mi-cyber-green);
+  animation: scan 3s linear infinite;
+  box-shadow: 0 0 10px var(--mi-cyber-green);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Mission Cell Styling */
+.mission-cell {
+  background: linear-gradient(135deg, var(--classic-gray) 0%, #A0A0A0 100%);
+  border-width: 3px;
+  border-style: solid;
+  border-color: var(--classic-border-light) var(--classic-border-dark) var(--classic-border-dark) var(--classic-border-light);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.mission-cell:hover:not(.revealed):not(.flagged) {
+  background: linear-gradient(135deg, #D0D0D0 0%, #B0B0B0 100%);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.mission-cell.revealed {
+  border: 1px solid var(--classic-border-dark);
+  background: var(--classic-bg);
+  animation: cellReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mission-cell.flagged {
+  animation: flagPlace 0.4s ease-out;
+  background: linear-gradient(135deg, var(--mi-yellow) 0%, var(--mi-orange) 100%);
+  box-shadow: 0 0 10px rgba(252, 211, 77, 0.5);
+}
+
+.mission-cell.exploded {
+  animation: explode 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: radial-gradient(circle, #FFFF00 0%, #FF6B00 50%, #DC2626 100%);
+}
+
+/* Mission HUD */
+.mission-hud {
+  background: linear-gradient(180deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.8) 100%);
+  border: 1px solid var(--mi-red);
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.mission-hud::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(16,249,112,0.1), transparent);
+  animation: sweep 3s linear infinite;
+  pointer-events: none;
+}
+
+/* Mission Timer */
+.mission-timer {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: var(--mi-cyber-green);
+  font-size: 2rem;
+  text-shadow: 0 0 10px currentColor;
+  animation: pulse 1s infinite;
+}
+
+.mission-timer.critical {
+  color: var(--mi-red);
+  animation: blink 0.5s infinite;
+}
+
+/* Bomb Counter */
+.bomb-counter {
+  background: #1a1a1a;
+  border: 2px solid var(--mi-orange);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: var(--mi-yellow);
+}
+
+/* Explosion Effect */
+.explosion-active {
+  animation:
+    explode 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    screenShake 0.5s;
+}
+
+/* Victory/Defeat Overlays */
+.victory-overlay {
+  background: linear-gradient(135deg, rgba(16, 249, 112, 0.95) 0%, rgba(0, 212, 255, 0.95) 100%);
+  animation: missionInit 1s ease-out;
+}
+
+.defeat-overlay {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95) 0%, rgba(234, 88, 12, 0.95) 100%);
+  animation: glitch 0.3s ease-out;
+}
+
+/* Threat Level Indicators */
+@keyframes threatPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor;
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 0 0 15px currentColor;
+    opacity: 1;
+  }
+}
+
+.threat-safe {
+  box-shadow: 0 0 8px rgba(16, 249, 112, 0.3);
+}
+
+.threat-low {
+  box-shadow: 0 0 10px rgba(252, 211, 77, 0.4);
+  animation: threatPulse 2s ease-in-out infinite;
+}
+
+.threat-medium {
+  box-shadow: 0 0 12px rgba(234, 88, 12, 0.5);
+  animation: threatPulse 1.5s ease-in-out infinite;
+}
+
+.threat-high {
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+  animation: threatPulse 1s ease-in-out infinite;
+}
+
+.threat-critical {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.8), 0 0 30px rgba(220, 38, 38, 0.4);
+  animation: threatPulse 0.5s ease-in-out infinite;
+}
+
+/* Threat Level Indicator Badge */
+.threat-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.threat-badge.safe {
+  background: #10F970;
+  box-shadow: 0 0 4px #10F970;
+}
+
+.threat-badge.low {
+  background: #FCD34D;
+  box-shadow: 0 0 4px #FCD34D;
+  animation: pulse 2s infinite;
+}
+
+.threat-badge.medium {
+  background: #EA580C;
+  box-shadow: 0 0 6px #EA580C;
+  animation: pulse 1.5s infinite;
+}
+
+.threat-badge.high {
+  background: #DC2626;
+  box-shadow: 0 0 8px #DC2626;
+  animation: pulse 1s infinite;
+}
+
+.threat-badge.critical {
+  background: #DC2626;
+  box-shadow: 0 0 10px #DC2626, 0 0 15px #DC2626;
+  animation: blink 0.5s infinite;
 }

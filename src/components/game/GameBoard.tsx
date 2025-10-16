@@ -34,29 +34,30 @@ export function GameBoard({
   };
 
   return (
-    <div
-      className={cn(
-        'game-board inline-grid bg-neutral-300 p-2 rounded-lg shadow-lg',
-        getCellSize(),
-        className
-      )}
-      style={{
-        gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`,
-      }}
-    >
-      {board.map((row) =>
-        row.map((cell) => (
-          <Cell
-            key={`${cell.x}-${cell.y}`}
-            cell={cell}
-            onClick={onCellClick}
-            onRightClick={onCellRightClick}
-            onLongPress={onCellRightClick}
-            gameOver={gameOver}
-          />
-        ))
-      )}
+    <div className={cn('mission-container rounded-lg', className)}>
+      <div
+        className={cn(
+          'game-board inline-grid bg-neutral-800 p-2',
+          getCellSize()
+        )}
+        style={{
+          gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`,
+        }}
+      >
+        {board.map((row) =>
+          row.map((cell) => (
+            <Cell
+              key={`${cell.x}-${cell.y}`}
+              cell={cell}
+              onClick={onCellClick}
+              onRightClick={onCellRightClick}
+              onLongPress={onCellRightClick}
+              gameOver={gameOver}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

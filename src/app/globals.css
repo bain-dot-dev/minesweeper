@@ -40,6 +40,17 @@
   --num-6: #00CED1;
   --num-7: #000000;
   --num-8: #808080;
+
+  /* Standard Tailwind colors used in components */
+  --white: #ffffff;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --blue-500: #3b82f6;
+  --green-500: #22c55e;
 }
 
 @theme inline {
@@ -56,6 +67,25 @@
   --color-neutral-600: var(--neutral-600);
   --color-neutral-700: var(--neutral-700);
   --color-neutral-800: var(--neutral-800);
+  --color-mi-black: var(--mi-black);
+  --color-mi-red: var(--mi-red);
+  --color-mi-orange: var(--mi-orange);
+  --color-mi-yellow: var(--mi-yellow);
+  --color-mi-cyber-green: var(--mi-cyber-green);
+  --color-mi-electric-blue: var(--mi-electric-blue);
+  --color-classic-gray: var(--classic-gray);
+  --color-classic-border-light: var(--classic-border-light);
+  --color-classic-border-dark: var(--classic-border-dark);
+  --color-classic-bg: var(--classic-bg);
+  --color-white: var(--white);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-blue-500: var(--blue-500);
+  --color-green-500: var(--green-500);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

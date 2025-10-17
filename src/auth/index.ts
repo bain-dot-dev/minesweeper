@@ -33,7 +33,7 @@ declare module "next-auth" {
 
 // Auth configuration for wallet authentication and World ID verification
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
   providers: [
     Credentials({
@@ -66,12 +66,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           deviceOS?: string;
         };
 
-        if (!walletAddress) {
+        // Allow authentication with either walletAddress or username
+        if (!walletAddress && !username) {
           return null;
         }
 
+        const userId = walletAddress || username || "anonymous";
+
         return {
-          id: walletAddress,
+          id: userId,
           walletAddress,
           username,
           profilePictureUrl,

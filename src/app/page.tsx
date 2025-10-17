@@ -102,7 +102,10 @@ export default function Home() {
               verificationResult.user.walletAddress
             );
             if (userByAddress) {
-              userInfo.username = userByAddress.username || userInfo.username;
+              // Only use MiniKit username if user didn't provide one
+              if (!username) {
+                userInfo.username = userByAddress.username || userInfo.username;
+              }
               userInfo.profilePictureUrl = userByAddress.profilePictureUrl;
             }
           } catch (error) {
@@ -111,15 +114,16 @@ export default function Home() {
           }
 
           // Step 5: Sign in with the verified user data
-          await signIn("credentials", {
+          console.log("🔐 Signing in with user data:", userInfo);
+          const signInResult = await signIn("credentials", {
             walletAddress: userInfo.walletAddress,
             username: userInfo.username,
             profilePictureUrl: userInfo.profilePictureUrl,
-            redirect: false,
+            redirectTo: "/home",
           });
 
+          console.log("🔐 Sign in result:", signInResult);
           setAuthState("success");
-          router.push("/home");
         } else {
           throw new Error(verificationResult.message || "Verification failed");
         }
@@ -194,14 +198,14 @@ export default function Home() {
         await verifyWithServer(result, username);
 
         // Sign in with the verified user
+        console.log("🔐 IDKit signing in with username:", username);
         await signIn("credentials", {
           username,
           verified: "true",
-          redirect: false,
+          redirectTo: "/home",
         });
 
         setAuthState("success");
-        router.push("/home");
       } catch (error) {
         console.error("IDKit verification error:", error);
         setError(

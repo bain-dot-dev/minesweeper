@@ -2,11 +2,11 @@
  * Game header component - displays timer, mine counter, and difficulty selector
  */
 
-'use client';
+"use client";
 
-import { DifficultyLevel } from '@/types/game';
-import { formatTime, cn } from '@/lib/utils';
-import { Timer, Bookmark, Sparks } from 'iconoir-react';
+import { DifficultyLevel } from "@/types/game";
+import { formatTime, cn } from "@/lib/utils";
+import { Timer, Bookmark, Sparks } from "iconoir-react";
 
 interface GameHeaderProps {
   elapsed: number;
@@ -25,11 +25,11 @@ export function GameHeader({
   onReset,
   className,
 }: GameHeaderProps) {
-  const difficulties: DifficultyLevel[] = ['easy', 'medium', 'hard'];
+  const difficulties: DifficultyLevel[] = ["easy", "medium", "hard"];
   const isCritical = remainingMines < 0 || elapsed > 600000; // 10 minutes
 
   return (
-    <div className={cn('flex flex-col gap-4 w-full max-w-4xl', className)}>
+    <div className={cn("flex flex-col gap-4 w-full max-w-4xl", className)}>
       {/* Mission HUD */}
       <div className="mission-hud grid grid-cols-3 items-center gap-6">
         {/* Timer Display */}
@@ -37,10 +37,12 @@ export function GameHeader({
           <span className="text-xs text-mi-cyber-green uppercase tracking-wider opacity-70">
             Mission Time
           </span>
-          <div className={cn(
-            'mission-timer flex items-center gap-2',
-            isCritical && 'critical'
-          )}>
+          <div
+            className={cn(
+              "mission-timer flex items-center gap-2",
+              isCritical && "critical"
+            )}
+          >
             <Timer className="w-5 h-5" />
             <span className="text-2xl font-mono font-bold tabular-nums">
               {formatTime(elapsed)}
@@ -65,17 +67,17 @@ export function GameHeader({
           <span className="text-xs text-mi-yellow uppercase tracking-wider opacity-70">
             Threats Remaining
           </span>
-          <div className="bomb-counter flex items-center gap-2">
+          <div className="bomb-counter flex items-center gap-2!">
             <Bookmark className="w-5 h-5" />
             <span className="count text-2xl font-bold tabular-nums">
-              {remainingMines.toString().padStart(2, '0')}
+              {remainingMines.toString().padStart(2, "0")}
             </span>
           </div>
         </div>
       </div>
 
       {/* Mission Difficulty Selector */}
-      <div className="flex gap-2 bg-gradient-to-r from-mi-black/90 to-mi-black/70 rounded-lg p-2 border border-mi-electric-blue/30">
+      <div className="flex gap-2 bg-gradient-to-r from-mi-black/90 to-mi-black/70 rounded-lg p-2 border border-mi-electric-blue/30!">
         <span className="flex items-center px-3 text-xs font-bold text-mi-electric-blue uppercase tracking-wider">
           Difficulty:
         </span>
@@ -84,11 +86,11 @@ export function GameHeader({
             key={diff}
             onClick={() => onDifficultyChange(diff)}
             className={cn(
-              'flex-1 py-2 px-4 rounded-md font-bold text-sm uppercase tracking-wide transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-mi-electric-blue',
+              "flex-1 py-2 px-4 rounded-md font-bold! text-sm! uppercase! tracking-wide! transition-all! duration-200!",
+              "focus:outline-none! focus:ring-2! focus:ring-mi-electric-blue!",
               difficulty === diff
-                ? 'bg-gradient-to-r from-mi-red to-mi-orange text-white shadow-lg scale-105 border'
-                : 'bg-mi-black/50 text-mi-cyber-green hover:bg-mi-black hover:text-mi-yellow border-mi-cyber-green/30'
+                ? "bg-gradient-to-r! from-mi-red! to-mi-orange! text-white shadow-lg scale-105 border!"
+                : "bg-mi-black/50! text-mi-cyber-green! hover:bg-mi-black! hover:text-mi-yellow! border-mi-cyber-green/30!"
             )}
           >
             {diff}

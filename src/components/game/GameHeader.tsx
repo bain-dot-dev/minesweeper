@@ -87,8 +87,8 @@ export function GameHeader({
               'flex-1 py-2 px-4 rounded-md font-bold text-sm uppercase tracking-wide transition-all duration-200',
               'focus:outline-none focus:ring-2 focus:ring-mi-electric-blue',
               difficulty === diff
-                ? 'bg-gradient-to-r from-mi-red to-mi-orange text-white shadow-lg scale-105'
-                : 'bg-mi-black/50 text-mi-cyber-green hover:bg-mi-black hover:text-mi-yellow border border-mi-cyber-green/30'
+                ? 'bg-gradient-to-r from-mi-red to-mi-orange text-white shadow-lg scale-105 border'
+                : 'bg-mi-black/50 text-mi-cyber-green hover:bg-mi-black hover:text-mi-yellow border-mi-cyber-green/30'
             )}
           >
             {diff}

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Generate a secure nonce - at least 8 alphanumeric characters
   const nonce = crypto.randomUUID().replace(/-/g, "");
 

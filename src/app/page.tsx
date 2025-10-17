@@ -10,7 +10,6 @@ import {
   VerificationLevel as IDKitVerificationLevel,
 } from "@worldcoin/idkit";
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 export default function Home() {
@@ -20,7 +19,6 @@ export default function Home() {
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const { isInstalled } = useMiniKit();
-  const router = useRouter();
 
   // Get environment variables
   const appId = process.env.NEXT_PUBLIC_APP_ID || "";
@@ -137,7 +135,7 @@ export default function Home() {
       );
       setAuthState("error");
     }
-  }, [isInstalled, router, username]);
+  }, [isInstalled, username]);
 
   // ✅ CORRECT: World ID Verification for specific actions (optional)
   const handleWorldIDVerification = useCallback(async () => {
@@ -214,7 +212,7 @@ export default function Home() {
         setAuthState("error");
       }
     },
-    [username, router, verifyWithServer]
+    [username, verifyWithServer]
   );
 
   return (

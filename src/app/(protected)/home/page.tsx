@@ -49,48 +49,52 @@ export default async function Home() {
           </div>
         </div>
       </Page.Header>
-      <Page.Main className="flex flex-col items-center justify-start mb-16 bg-gradient-to-b from-mi-black via-mi-black/98 to-mi-black">
-        {/* Agent Intel Panel */}
-        {session?.user && (
-          <div className="w-full max-w-md mb-6 p-4 bg-gradient-to-br from-mi-black/90 to-mi-black/70 rounded-lg border border-mi-electric-blue/30 shadow-lg shadow-mi-electric-blue/10 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-mi-cyber-green to-transparent opacity-50"></div>
+      <Page.Main className="flex flex-col overflow-hidden bg-gradient-to-b from-mi-black via-mi-black/98 to-mi-black p-0">
+        <div className="flex-1 overflow-y-auto flex flex-col items-center pt-6">
+          {/* Agent Intel Panel */}
+          {session?.user && (
+            <div className="w-full max-w-md mb-6 px-4">
+              <div className="p-4 bg-gradient-to-br from-mi-black/90 to-mi-black/70 rounded-lg border border-mi-electric-blue/30 shadow-lg shadow-mi-electric-blue/10 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-mi-cyber-green to-transparent opacity-50"></div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-mi-cyber-green rounded-full animate-pulse"></div>
-              <h3 className="text-xs font-bold text-mi-electric-blue uppercase tracking-widest font-mono">
-                Agent Intel
-              </h3>
-            </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 bg-mi-cyber-green rounded-full animate-pulse"></div>
+                  <h3 className="text-xs font-bold text-mi-electric-blue uppercase tracking-widest font-mono">
+                    Agent Intel
+                  </h3>
+                </div>
 
-            <div className="space-y-2 text-xs font-mono">
-              <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
-                <span className="text-mi-yellow/70 uppercase tracking-wide">Codename:</span>
-                <span className="text-mi-cyber-green font-bold">{session.user.username}</span>
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
+                    <span className="text-mi-yellow/70 uppercase tracking-wide">Codename:</span>
+                    <span className="text-mi-cyber-green font-bold">{session.user.username}</span>
+                  </div>
+
+                  {session.user.walletAddress && (
+                    <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
+                      <span className="text-mi-yellow/70 uppercase tracking-wide">Wallet ID:</span>
+                      <span className="text-mi-electric-blue font-bold">
+                        {session.user.walletAddress.slice(0, 6)}...
+                        {session.user.walletAddress.slice(-4)}
+                      </span>
+                    </div>
+                  )}
+
+                  {session.user.profilePictureUrl && (
+                    <div className="flex items-center justify-between py-1.5">
+                      <span className="text-mi-yellow/70 uppercase tracking-wide">Profile:</span>
+                      <span className="text-mi-cyber-green font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-mi-cyber-green rounded-full"></span>
+                        Verified
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {session.user.walletAddress && (
-                <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
-                  <span className="text-mi-yellow/70 uppercase tracking-wide">Wallet ID:</span>
-                  <span className="text-mi-electric-blue font-bold">
-                    {session.user.walletAddress.slice(0, 6)}...
-                    {session.user.walletAddress.slice(-4)}
-                  </span>
-                </div>
-              )}
-
-              {session.user.profilePictureUrl && (
-                <div className="flex items-center justify-between py-1.5">
-                  <span className="text-mi-yellow/70 uppercase tracking-wide">Profile:</span>
-                  <span className="text-mi-cyber-green font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-mi-cyber-green rounded-full"></span>
-                    Verified
-                  </span>
-                </div>
-              )}
             </div>
-          </div>
-        )}
-        <MinesweeperGame />
+          )}
+          <MinesweeperGame />
+        </div>
       </Page.Main>
     </>
   );

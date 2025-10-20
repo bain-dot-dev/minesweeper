@@ -10,7 +10,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup:audio": "node scripts/setup-audio-directories.js"
   },
   "dependencies": {
     "@worldcoin/idkit": "^2.4.2",

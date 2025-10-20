@@ -5,12 +5,15 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useMinesweeper } from '@/hooks/useMinesweeper';
 import { GameBoard } from './GameBoard';
 import { GameHeader } from './GameHeader';
 import { GameOverModal } from './GameOverModal';
 import { DifficultyLevel } from '@/types/game';
+import { useGameStateAudio, useDynamicMusic, useUISounds } from '@/hooks/useAudio';
+import { AudioSettings, CompactAudioControls } from '@/components/audio/AudioSettings';
+import { AudioLoadingIndicator } from '@/components/audio/AudioLoadingIndicator';
 
 export function MinesweeperGame() {
   const [showModal, setShowModal] = useState(false);
@@ -23,10 +26,41 @@ export function MinesweeperGame() {
     changeDifficulty,
   } = useMinesweeper('easy');
 
+  // Audio hooks
+  const { playVictorySound, playDefeatSound, startGameplayMusic, playMenuMusic } = useGameStateAudio();
+  const { playDifficultyChange } = useUISounds();
+
+  // Dynamic music based on game state
+  useDynamicMusic({
+    status: gameState.status,
+    flagCount: gameState.flagCount,
+    mineCount: gameState.config.mines,
+    revealedCount: gameState.revealedCount,
+    totalCells: gameState.config.width * gameState.config.height,
+  });
+
   // Calculate remaining mines
   const remainingMines = useMemo(() => {
     return gameState.config.mines - gameState.flagCount;
   }, [gameState.config.mines, gameState.flagCount]);
+
+  // Play menu music after first interaction (prevents blocking)
+  useEffect(() => {
+    // Don't play music on mount - wait for user to start playing
+    // Music will start when game begins
+  }, [playMenuMusic]);
+
+  // Handle game status changes
+  useEffect(() => {
+    if (gameState.status === 'won') {
+      playVictorySound();
+    } else if (gameState.status === 'lost') {
+      playDefeatSound();
+    } else if (gameState.status === 'playing' && !gameState.firstClick) {
+      // Start gameplay music when first move is made
+      startGameplayMusic();
+    }
+  }, [gameState.status, gameState.firstClick, playVictorySound, playDefeatSound, startGameplayMusic]);
 
   // Show modal when game ends
   const handleGameEnd = () => {
@@ -43,15 +77,26 @@ export function MinesweeperGame() {
   const handleDifficultyChange = (difficulty: DifficultyLevel) => {
     changeDifficulty(difficulty);
     setShowModal(false);
+    playDifficultyChange();
   };
 
   const handleReset = () => {
     resetGame();
     setShowModal(false);
+    playMenuMusic();
   };
 
   return (
     <div className="flex flex-col items-center gap-6 p-4 w-full max-w-7xl mx-auto">
+      {/* Audio Loading Indicator */}
+      <AudioLoadingIndicator />
+
+      {/* Audio Controls */}
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <CompactAudioControls />
+        <AudioSettings />
+      </div>
+
       {/* Game Header */}
       <GameHeader
         elapsed={timer.elapsed}

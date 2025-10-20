@@ -20,6 +20,7 @@ import {
   toggleFlag as toggleFlagLogic,
 } from '@/lib/game-logic';
 import { useTimer } from './useTimer';
+import { useCellAudio } from './useAudio';
 
 interface UseMinesweeperReturn {
   gameState: GameState;
@@ -34,6 +35,7 @@ export function useMinesweeper(
   initialDifficulty: DifficultyLevel = 'easy'
 ): UseMinesweeperReturn {
   const timer = useTimer();
+  const { playCellRevealSound, playCellFlagSound } = useCellAudio();
 
   // Initialize game state
   const [gameState, setGameState] = useState<GameState>(() => {
@@ -88,6 +90,10 @@ export function useMinesweeper(
           newBoard = revealAllMines(newBoard);
           newStatus = 'lost';
           timer.stop();
+
+          // Play explosion sound
+          playCellRevealSound(cell);
+
           return {
             ...prev,
             board: newBoard,
@@ -102,8 +108,15 @@ export function useMinesweeper(
         newBoard = result.board;
         newRevealedCount += result.revealedCount;
 
-        // Check win condition
+        // Play reveal sound with context
         const totalCells = prev.config.width * prev.config.height;
+        playCellRevealSound(cell, {
+          nearBombs: cell.adjacentMines,
+          revealedCells: newRevealedCount,
+          totalCells: totalCells,
+        });
+
+        // Check win condition
         if (checkWinCondition(newBoard, totalCells, prev.config.mines, newRevealedCount)) {
           newStatus = 'won';
           timer.stop();
@@ -126,7 +139,7 @@ export function useMinesweeper(
         };
       });
     },
-    [gameState.status, gameState.board, timer]
+    [gameState.status, gameState.board, timer, playCellRevealSound]
   );
 
   // Handle cell right click (flag)
@@ -147,6 +160,10 @@ export function useMinesweeper(
         const newBoard = toggleFlagLogic(prev.board, x, y);
         const newFlagCount = countFlags(newBoard);
 
+        // Play flag/unflag sound
+        const wasFlagged = prev.board[y][x].isFlagged;
+        playCellFlagSound(!wasFlagged);
+
         return {
           ...prev,
           board: newBoard,
@@ -154,7 +171,7 @@ export function useMinesweeper(
         };
       });
     },
-    [gameState.status, gameState.board, gameState.firstClick]
+    [gameState.status, gameState.board, gameState.firstClick, playCellFlagSound]
   );
 
   // Reset game

@@ -95,6 +95,10 @@ export class AudioManager implements IAudioManager {
   // For mobile audio unlock
   private unlocked: boolean = false;
 
+  // Track last music track for resuming when toggling music back on
+  private lastMusicTrack: string | null = null;
+  private wasMusicPlaying: boolean = false;
+
   constructor(initialSettings?: Partial<AudioSettings>) {
     this.state = {
       initialized: false,
@@ -386,7 +390,21 @@ export class AudioManager implements IAudioManager {
    * Play music track with crossfade
    */
   playMusic(trackName: string, config?: Partial<AudioConfig>): void {
-    if (!this.settings.musicEnabled) return;
+    // Store the last requested music track even if music is disabled
+    this.lastMusicTrack = trackName;
+
+    console.log(
+      "🎵 playMusic called:",
+      trackName,
+      "musicEnabled:",
+      this.settings.musicEnabled
+    );
+
+    if (!this.settings.musicEnabled) {
+      console.log("🎵 Music is disabled, storing intent to play");
+      this.wasMusicPlaying = true;
+      return;
+    }
 
     const eventType = trackName as AudioEventType;
     const track = this.musicTracks.get(eventType);
@@ -429,10 +447,16 @@ export class AudioManager implements IAudioManager {
     // Start loading and play as soon as enough data is available
     // Browser will stream the rest while playing
     const playWhenReady = () => {
-      track.play().catch(() => {
-        // Expected if user hasn't interacted yet - will play after interaction
-        // console.warn('Music playback blocked - waiting for user interaction');
-      });
+      console.log("🎵 Attempting to play track:", trackName);
+      track
+        .play()
+        .then(() => {
+          console.log("✅ Music playing successfully:", trackName);
+        })
+        .catch((err) => {
+          // Expected if user hasn't interacted yet - will play after interaction
+          console.warn("⚠️ Music playback blocked:", err.message);
+        });
 
       // Fade in if specified
       if (config?.fadeIn) {
@@ -443,15 +467,23 @@ export class AudioManager implements IAudioManager {
     // If track has enough data, play immediately
     if (track.readyState >= 2) {
       // HAVE_CURRENT_DATA or better
+      console.log("🎵 Track ready, playing immediately");
       playWhenReady();
     } else {
       // Wait for enough data to start playing
+      console.log("🎵 Track not ready, loading first...");
       track.addEventListener("canplay", playWhenReady, { once: true });
       track.load(); // Start loading
     }
 
     this.currentMusicElement = track;
     this.state.currentMusic = trackName;
+    this.wasMusicPlaying = true;
+    console.log("🎵 Music state updated:", {
+      currentMusicElement: !!this.currentMusicElement,
+      currentMusic: this.state.currentMusic,
+      wasMusicPlaying: this.wasMusicPlaying,
+    });
   }
 
   /**
@@ -517,7 +549,8 @@ export class AudioManager implements IAudioManager {
       this.currentMusicElement.pause();
       this.currentMusicElement.currentTime = 0;
       this.currentMusicElement = null;
-      this.state.currentMusic = null;
+      // Keep state.currentMusic for potential resume
+      // this.state.currentMusic = null;
     }
   }
 
@@ -689,6 +722,8 @@ export class AudioManager implements IAudioManager {
    * Update settings
    */
   updateSettings(settings: Partial<AudioSettings>): void {
+    const previousMusicEnabled = this.settings.musicEnabled;
+
     this.settings = { ...this.settings, ...settings };
 
     // Apply volume changes
@@ -700,6 +735,36 @@ export class AudioManager implements IAudioManager {
     }
     if (settings.soundEffectsVolume !== undefined) {
       this.setSoundEffectsVolume(settings.soundEffectsVolume);
+    }
+
+    // Handle music toggling
+    if (settings.musicEnabled !== undefined) {
+      if (!settings.musicEnabled && previousMusicEnabled) {
+        // Music was disabled - stop it
+        console.log("🎵 Music disabled - stopping music");
+        this.stopMusic();
+      } else if (settings.musicEnabled && !previousMusicEnabled) {
+        // Music was enabled - resume or start default music
+        console.log("🎵 Music enabled - checking what to play...", {
+          wasMusicPlaying: this.wasMusicPlaying,
+          currentMusic: this.state.currentMusic,
+          lastMusicTrack: this.lastMusicTrack,
+        });
+
+        if (this.wasMusicPlaying && this.state.currentMusic) {
+          // Resume the music that was playing
+          console.log("🎵 Resuming previous music:", this.state.currentMusic);
+          this.playMusic(this.state.currentMusic, { loop: true, fadeIn: 500 });
+        } else if (this.lastMusicTrack) {
+          // Resume the last requested track
+          console.log("🎵 Playing last requested track:", this.lastMusicTrack);
+          this.playMusic(this.lastMusicTrack, { loop: true, fadeIn: 500 });
+        } else {
+          // No music was playing - start default menu theme
+          console.log("🎵 Starting default menu theme");
+          this.playMusic("menu_theme", { loop: true, fadeIn: 1000 });
+        }
+      }
     }
 
     // Handle mute

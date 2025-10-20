@@ -3,10 +3,15 @@
  * Provides easy-to-use hooks for playing sounds and managing audio
  */
 
-import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { getAudioManager } from '@/lib/audio/AudioManager';
-import { AudioEventType, AudioConfig, GameContext, AudioSettings } from '@/types/audio';
-import { CellState } from '@/types/game';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { getAudioManager } from "@/lib/audio/AudioManager";
+import {
+  AudioEventType,
+  AudioConfig,
+  GameContext,
+  AudioSettings,
+} from "@/types/audio";
+import { CellState } from "@/types/game";
 
 /**
  * Main hook for game audio
@@ -19,8 +24,8 @@ export function useGameAudio() {
     const audioManager = audioManagerRef.current;
 
     // Initialize audio system
-    audioManager.initialize().catch(err => {
-      console.error('Failed to initialize audio:', err);
+    audioManager.initialize().catch((err) => {
+      console.error("Failed to initialize audio:", err);
     });
 
     // Cleanup on unmount
@@ -29,13 +34,19 @@ export function useGameAudio() {
     };
   }, []);
 
-  const playSound = useCallback((event: AudioEventType, config?: Partial<AudioConfig>) => {
-    audioManagerRef.current.playSound(event, config);
-  }, []);
+  const playSound = useCallback(
+    (event: AudioEventType, config?: Partial<AudioConfig>) => {
+      audioManagerRef.current.playSound(event, config);
+    },
+    []
+  );
 
-  const playMusic = useCallback((trackName: string, config?: Partial<AudioConfig>) => {
-    audioManagerRef.current.playMusic(trackName, config);
-  }, []);
+  const playMusic = useCallback(
+    (trackName: string, config?: Partial<AudioConfig>) => {
+      audioManagerRef.current.playMusic(trackName, config);
+    },
+    []
+  );
 
   const stopMusic = useCallback(() => {
     audioManagerRef.current.stopMusic();
@@ -45,17 +56,23 @@ export function useGameAudio() {
     audioManagerRef.current.stopAll();
   }, []);
 
-  const playAdaptiveSound = useCallback((event: AudioEventType, context: GameContext) => {
-    audioManagerRef.current.playAdaptiveSound(event, context);
-  }, []);
+  const playAdaptiveSound = useCallback(
+    (event: AudioEventType, context: GameContext) => {
+      audioManagerRef.current.playAdaptiveSound(event, context);
+    },
+    []
+  );
 
   const adjustMusicIntensity = useCallback((dangerLevel: number) => {
     audioManagerRef.current.adjustMusicIntensity(dangerLevel);
   }, []);
 
-  const fadeTransition = useCallback(async (from: string, to: string, duration: number) => {
-    return audioManagerRef.current.fadeTransition(from, to, duration);
-  }, []);
+  const fadeTransition = useCallback(
+    async (from: string, to: string, duration: number) => {
+      return audioManagerRef.current.fadeTransition(from, to, duration);
+    },
+    []
+  );
 
   return {
     playSound,
@@ -76,58 +93,64 @@ export function useGameAudio() {
 export function useCellAudio() {
   const { playSound, playAdaptiveSound } = useGameAudio();
 
-  const playCellRevealSound = useCallback((cell: CellState, context?: Partial<GameContext>) => {
-    if (cell.isMine) {
-      // Bomb explosion with spatial effect
-      playSound('bomb_explode', { volume: 0.8 });
-      return;
-    }
+  const playCellRevealSound = useCallback(
+    (cell: CellState, context?: Partial<GameContext>) => {
+      if (cell.isMine) {
+        // Bomb explosion with spatial effect
+        playSound("bomb_explode", { volume: 0.8 });
+        return;
+      }
 
-    if (cell.adjacentMines === 0) {
-      // Safe reveal - will trigger cascade
-      playSound('cascade_reveal', { volume: 0.4 });
-      return;
-    }
+      if (cell.adjacentMines === 0) {
+        // Safe reveal - will trigger cascade
+        playSound("cascade_reveal", { volume: 0.4 });
+        return;
+      }
 
-    // Number reveal - different sound for each number
-    // Use available sounds with pitch variation for missing ones
-    let soundToPlay: AudioEventType;
-    if (cell.adjacentMines <= 2) {
-      soundToPlay = `number_${cell.adjacentMines}` as AudioEventType;
-    } else {
-      // Use number_2 with different pitch for numbers 3-8
-      soundToPlay = 'number_2' as AudioEventType;
-    }
+      // Number reveal - different sound for each number
+      // Use available sounds with pitch variation for missing ones
+      let soundToPlay: AudioEventType;
+      if (cell.adjacentMines <= 2) {
+        soundToPlay = `number_${cell.adjacentMines}` as AudioEventType;
+      } else {
+        // Use number_2 with different pitch for numbers 3-8
+        soundToPlay = "number_2" as AudioEventType;
+      }
 
-    // Adjust pitch based on number (higher numbers = higher pitch)
-    const pitchVariation = 1 + ((cell.adjacentMines - 1) * 0.1);
+      // Adjust pitch based on number (higher numbers = higher pitch)
+      const pitchVariation = 1 + (cell.adjacentMines - 1) * 0.1;
 
-    if (context && context.nearBombs !== undefined) {
-      // Use adaptive sound if context provided
-      playAdaptiveSound('cell_reveal', {
-        nearBombs: context.nearBombs,
-        streakCount: context.streakCount || 0,
-        revealedCells: context.revealedCells || 0,
-        totalCells: context.totalCells || 0,
-        dangerLevel: context.dangerLevel || 0,
-      });
-    } else {
-      // Regular number reveal with pitch variation
-      playSound(soundToPlay, {
-        volume: 0.45,
-        playbackRate: pitchVariation
-      });
-    }
-  }, [playSound, playAdaptiveSound]);
+      if (context && context.nearBombs !== undefined) {
+        // Use adaptive sound if context provided
+        playAdaptiveSound("cell_reveal", {
+          nearBombs: context.nearBombs,
+          streakCount: context.streakCount || 0,
+          revealedCells: context.revealedCells || 0,
+          totalCells: context.totalCells || 0,
+          dangerLevel: context.dangerLevel || 0,
+        });
+      } else {
+        // Regular number reveal with pitch variation
+        playSound(soundToPlay, {
+          volume: 0.45,
+          playbackRate: pitchVariation,
+        });
+      }
+    },
+    [playSound, playAdaptiveSound]
+  );
 
-  const playCellFlagSound = useCallback((isFlagging: boolean) => {
-    if (isFlagging) {
-      playSound('cell_flag', { volume: 0.5 });
-    } else {
-      // Use same sound for unflag if unflag sound doesn't exist
-      playSound('cell_flag', { volume: 0.3, playbackRate: 0.9 });
-    }
-  }, [playSound]);
+  const playCellFlagSound = useCallback(
+    (isFlagging: boolean) => {
+      if (isFlagging) {
+        playSound("cell_flag", { volume: 0.5 });
+      } else {
+        // Use same sound for unflag if unflag sound doesn't exist
+        playSound("cell_flag", { volume: 0.3, playbackRate: 0.9 });
+      }
+    },
+    [playSound]
+  );
 
   return {
     playCellRevealSound,
@@ -143,19 +166,19 @@ export function useGameStateAudio() {
 
   const playVictorySound = useCallback(() => {
     stopMusic();
-    playSound('mission_complete', { volume: 0.7 });
+    playSound("mission_complete", { volume: 0.7 });
     setTimeout(() => {
-      playMusic('victory_theme', { volume: 0.6, loop: false });
+      playMusic("victory_theme", { volume: 0.6, loop: false });
     }, 500);
   }, [playSound, playMusic, stopMusic]);
 
   const playDefeatSound = useCallback(() => {
     stopMusic();
-    playSound('bomb_explode', { volume: 0.8 });
+    playSound("bomb_explode", { volume: 0.8 });
   }, [playSound, stopMusic]);
 
   const startGameplayMusic = useCallback(() => {
-    playMusic('gameplay_tension', {
+    playMusic("gameplay_tension", {
       volume: 0.4,
       loop: true,
       fadeIn: 2000,
@@ -163,11 +186,11 @@ export function useGameStateAudio() {
   }, [playMusic]);
 
   const transitionToDangerMusic = useCallback(() => {
-    fadeTransition('gameplay_tension', 'danger_zone', 2000);
+    fadeTransition("gameplay_tension", "danger_zone", 2000);
   }, [fadeTransition]);
 
   const playMenuMusic = useCallback(() => {
-    playMusic('menu_theme', {
+    playMusic("menu_theme", {
       volume: 0.3,
       loop: true,
       fadeIn: 1500,
@@ -190,23 +213,23 @@ export function useUISounds() {
   const { playSound } = useGameAudio();
 
   const playClickSound = useCallback(() => {
-    playSound('menu_click', { volume: 0.35 });
+    playSound("menu_click", { volume: 0.35 });
   }, [playSound]);
 
   const playHoverSound = useCallback(() => {
-    playSound('menu_hover', { volume: 0.2 });
+    playSound("menu_hover", { volume: 0.2 });
   }, [playSound]);
 
   const playButtonPress = useCallback(() => {
-    playSound('button_press', { volume: 0.4 });
+    playSound("button_press", { volume: 0.4 });
   }, [playSound]);
 
   const playToggleSound = useCallback(() => {
-    playSound('toggle_switch', { volume: 0.35 });
+    playSound("toggle_switch", { volume: 0.35 });
   }, [playSound]);
 
   const playDifficultyChange = useCallback(() => {
-    playSound('difficulty_change', { volume: 0.45 });
+    playSound("difficulty_change", { volume: 0.45 });
   }, [playSound]);
 
   return {
@@ -224,37 +247,57 @@ export function useUISounds() {
 export function useAudioSettings() {
   const audioManagerRef = useRef(getAudioManager());
 
-  const settings = audioManagerRef.current.settings;
+  // Make settings reactive by using state
+  const [settings, setSettings] = useState<AudioSettings>(
+    audioManagerRef.current.settings
+  );
+
+  // Listen for settings changes from AudioManager
+  useEffect(() => {
+    const audioManager = audioManagerRef.current;
+
+    // Poll for settings changes (simple approach)
+    const interval = setInterval(() => {
+      setSettings({ ...audioManager.settings });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const updateSettings = useCallback((newSettings: Partial<AudioSettings>) => {
     audioManagerRef.current.updateSettings(newSettings);
+    setSettings({ ...audioManagerRef.current.settings });
   }, []);
 
   const setMasterVolume = useCallback((volume: number) => {
     audioManagerRef.current.setGlobalVolume(volume);
+    setSettings({ ...audioManagerRef.current.settings });
   }, []);
 
   const setSoundEffectsVolume = useCallback((volume: number) => {
     audioManagerRef.current.setSoundEffectsVolume(volume);
+    setSettings({ ...audioManagerRef.current.settings });
   }, []);
 
   const setMusicVolume = useCallback((volume: number) => {
     audioManagerRef.current.setMusicVolume(volume);
+    setSettings({ ...audioManagerRef.current.settings });
   }, []);
 
   const toggleMute = useCallback(() => {
     audioManagerRef.current.toggleMute();
+    setSettings({ ...audioManagerRef.current.settings });
   }, []);
 
   const toggleSounds = useCallback(() => {
-    updateSettings({ soundEnabled: !settings.soundEnabled });
+    const newEnabled = !settings.soundEnabled;
+    updateSettings({ soundEnabled: newEnabled });
   }, [settings.soundEnabled, updateSettings]);
 
   const toggleMusic = useCallback(() => {
-    updateSettings({ musicEnabled: !settings.musicEnabled });
-    if (settings.musicEnabled) {
-      audioManagerRef.current.stopMusic();
-    }
+    const newEnabled = !settings.musicEnabled;
+    // AudioManager.updateSettings will handle stopping/resuming music automatically
+    updateSettings({ musicEnabled: newEnabled });
   }, [settings.musicEnabled, updateSettings]);
 
   return {
@@ -283,15 +326,16 @@ export function useDynamicMusic(gameState: {
   const previousDangerLevel = useRef(0);
 
   useEffect(() => {
-    if (gameState.status !== 'playing') return;
+    if (gameState.status !== "playing") return;
 
     // Calculate danger level based on game state
-    const revealPercentage = gameState.revealedCount / (gameState.totalCells - gameState.mineCount);
+    const revealPercentage =
+      gameState.revealedCount / (gameState.totalCells - gameState.mineCount);
     const flagPercentage = gameState.flagCount / gameState.mineCount;
 
     // Danger increases as more is revealed with fewer flags
     const dangerLevel = Math.min(
-      (revealPercentage * 0.7) + ((1 - flagPercentage) * 0.3),
+      revealPercentage * 0.7 + (1 - flagPercentage) * 0.3,
       1
     );
 
@@ -302,7 +346,7 @@ export function useDynamicMusic(gameState: {
 
       // Transition to danger music at high danger levels
       if (dangerLevel > 0.7 && previousDangerLevel.current <= 0.7) {
-        fadeTransition('gameplay_tension', 'danger_zone', 2000);
+        fadeTransition("gameplay_tension", "danger_zone", 2000);
       }
     }
   }, [
@@ -330,23 +374,30 @@ export function useAudioPreloader() {
     try {
       await audioManagerRef.current.preloadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to preload audio');
+      setError(err instanceof Error ? err.message : "Failed to preload audio");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const preloadCategory = useCallback(async (category: 'ui' | 'gameplay' | 'danger' | 'success' | 'ambient') => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await audioManagerRef.current.preloadCategory(category);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to preload audio category');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const preloadCategory = useCallback(
+    async (category: "ui" | "gameplay" | "danger" | "success" | "ambient") => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        await audioManagerRef.current.preloadCategory(category);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to preload audio category"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   return {
     preloadAll,
@@ -355,6 +406,3 @@ export function useAudioPreloader() {
     error,
   };
 }
-
-// Import useState for useAudioPreloader
-import { useState } from 'react';

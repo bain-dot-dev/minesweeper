@@ -306,7 +306,7 @@ export function AudioSettings() {
               <div className="bg-mi-black/50 border border-mi-cyan/30 rounded-lg p-4 mt-4">
                 <p className="text-xs text-mi-cyan italic">
                   <span className="font-bold">Tip:</span> Settings are automatically saved
-                  to your browser's local storage.
+                  to your browser&apos;s local storage.
                 </p>
               </div>
             </div>

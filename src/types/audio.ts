@@ -3,7 +3,12 @@
  * Defines interfaces for audio configuration, management, and settings
  */
 
-export type AudioCategory = 'ui' | 'gameplay' | 'danger' | 'success' | 'ambient';
+export type AudioCategory =
+  | "ui"
+  | "gameplay"
+  | "danger"
+  | "success"
+  | "ambient";
 
 export interface AudioConfig {
   preload: boolean;
@@ -22,14 +27,14 @@ export interface AudioTrack {
 }
 
 export interface AudioSettings {
-  masterVolume: number;        // 0-100
-  soundEffectsVolume: number;  // 0-100
-  musicVolume: number;         // 0-100
-  enableHaptics: boolean;      // Mobile only
-  enable3DAudio: boolean;      // Spatial sound
-  audioQuality: 'low' | 'medium' | 'high';
+  masterVolume: number; // 0-100
+  soundEffectsVolume: number; // 0-100
+  musicVolume: number; // 0-100
+  enableHaptics: boolean; // Mobile only
+  enable3DAudio: boolean; // Spatial sound
+  audioQuality: "low" | "medium" | "high";
   // Accessibility
-  visualCuesOnly: boolean;     // For hearing impaired
+  visualCuesOnly: boolean; // For hearing impaired
   reducedAudioEffects: boolean; // For sensory sensitivity
   soundEnabled: boolean;
   musicEnabled: boolean;
@@ -52,34 +57,36 @@ export interface AudioEventData {
 
 export type AudioEventType =
   // UI Events
-  | 'menu_click'
-  | 'menu_hover'
-  | 'button_press'
-  | 'toggle_switch'
-  | 'difficulty_change'
+  | "menu_click"
+  | "menu_hover"
+  | "button_press"
+  | "toggle_switch"
+  | "difficulty_change"
   // Gameplay Events
-  | 'cell_reveal'
-  | 'cell_flag'
-  | 'cell_unflag'
-  | 'cascade_reveal'
-  | 'number_reveal'
-  | 'safe_reveal'
+  | "cell_reveal"
+  | "cell_flag"
+  | "cell_unflag"
+  | "cascade_reveal"
+  | "number_reveal"
+  | "number_1"
+  | "number_2"
+  | "safe_reveal"
   // Danger Events
-  | 'bomb_explode'
-  | 'bomb_warning'
-  | 'countdown'
-  | 'critical_alarm'
-  | 'heartbeat'
+  | "bomb_explode"
+  | "bomb_warning"
+  | "countdown"
+  | "critical_alarm"
+  | "heartbeat"
   // Success Events
-  | 'victory'
-  | 'achievement'
-  | 'combo_streak'
-  | 'mission_complete'
+  | "victory"
+  | "achievement"
+  | "combo_streak"
+  | "mission_complete"
   // Ambient/Music
-  | 'menu_theme'
-  | 'gameplay_tension'
-  | 'danger_zone'
-  | 'victory_theme';
+  | "menu_theme"
+  | "gameplay_tension"
+  | "danger_zone"
+  | "victory_theme";
 
 export interface AudioManagerState {
   initialized: boolean;

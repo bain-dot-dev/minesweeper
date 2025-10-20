@@ -103,6 +103,14 @@ export const DEFAULT_AUDIO_CONFIGS: Record<
     category: "gameplay",
     defaultConfig: { volume: 0.4, preload: true, loop: false },
   },
+  number_1: {
+    category: "gameplay",
+    defaultConfig: { volume: 0.4, preload: true, loop: false },
+  },
+  number_2: {
+    category: "gameplay",
+    defaultConfig: { volume: 0.45, preload: true, loop: false },
+  },
   safe_reveal: {
     category: "gameplay",
     defaultConfig: { volume: 0.35, preload: true, loop: false },

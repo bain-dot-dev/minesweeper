@@ -3,17 +3,26 @@
  * Integrates all game components and manages game flow
  */
 
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect } from 'react';
-import { useMinesweeper } from '@/hooks/useMinesweeper';
-import { GameBoard } from './GameBoard';
-import { GameHeader } from './GameHeader';
-import { GameOverModal } from './GameOverModal';
-import { DifficultyLevel } from '@/types/game';
-import { useGameStateAudio, useDynamicMusic, useUISounds } from '@/hooks/useAudio';
-import { AudioSettings, CompactAudioControls } from '@/components/audio/AudioSettings';
-import { AudioLoadingIndicator } from '@/components/audio/AudioLoadingIndicator';
+import { useState, useMemo, useEffect } from "react";
+import { useMinesweeper } from "@/hooks/useMinesweeper";
+import { GameBoard } from "./GameBoard";
+import { GameHeader } from "./GameHeader";
+import { GameOverModal } from "./GameOverModal";
+import { DifficultyLevel } from "@/types/game";
+import {
+  useGameStateAudio,
+  useDynamicMusic,
+  useUISounds,
+  useAudioUnlockPrompt,
+} from "@/hooks/useAudio";
+import {
+  AudioSettings,
+  CompactAudioControls,
+} from "@/components/audio/AudioSettings";
+import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
+import { AudioUnlockPrompt } from "@/components/audio/AudioUnlockPrompt";
 
 export function MinesweeperGame() {
   const [showModal, setShowModal] = useState(false);
@@ -24,11 +33,18 @@ export function MinesweeperGame() {
     handleCellRightClick,
     resetGame,
     changeDifficulty,
-  } = useMinesweeper('easy');
+  } = useMinesweeper("easy");
 
   // Audio hooks
-  const { playVictorySound, playDefeatSound, startGameplayMusic, playMenuMusic } = useGameStateAudio();
+  const {
+    playVictorySound,
+    playDefeatSound,
+    startGameplayMusic,
+    playMenuMusic,
+  } = useGameStateAudio();
   const { playDifficultyChange } = useUISounds();
+  const { isVisible: showUnlockPrompt, dismiss: dismissUnlockPrompt } =
+    useAudioUnlockPrompt();
 
   // Dynamic music based on game state
   useDynamicMusic({
@@ -52,25 +68,34 @@ export function MinesweeperGame() {
 
   // Handle game status changes
   useEffect(() => {
-    if (gameState.status === 'won') {
+    if (gameState.status === "won") {
       playVictorySound();
-    } else if (gameState.status === 'lost') {
+    } else if (gameState.status === "lost") {
       playDefeatSound();
-    } else if (gameState.status === 'playing' && !gameState.firstClick) {
+    } else if (gameState.status === "playing" && !gameState.firstClick) {
       // Start gameplay music when first move is made
       startGameplayMusic();
     }
-  }, [gameState.status, gameState.firstClick, playVictorySound, playDefeatSound, startGameplayMusic]);
+  }, [
+    gameState.status,
+    gameState.firstClick,
+    playVictorySound,
+    playDefeatSound,
+    startGameplayMusic,
+  ]);
 
   // Show modal when game ends
   const handleGameEnd = () => {
-    if (gameState.status === 'won' || gameState.status === 'lost') {
+    if (gameState.status === "won" || gameState.status === "lost") {
       setShowModal(true);
     }
   };
 
   // Watch for game end
-  if ((gameState.status === 'won' || gameState.status === 'lost') && !showModal) {
+  if (
+    (gameState.status === "won" || gameState.status === "lost") &&
+    !showModal
+  ) {
     handleGameEnd();
   }
 
@@ -97,6 +122,12 @@ export function MinesweeperGame() {
         <AudioSettings />
       </div>
 
+      {/* Audio Unlock Prompt */}
+      <AudioUnlockPrompt
+        isVisible={showUnlockPrompt}
+        onDismiss={dismissUnlockPrompt}
+      />
+
       {/* Game Header */}
       <GameHeader
         elapsed={timer.elapsed}
@@ -112,7 +143,7 @@ export function MinesweeperGame() {
           board={gameState.board}
           onCellClick={handleCellClick}
           onCellRightClick={handleCellRightClick}
-          gameOver={gameState.status === 'won' || gameState.status === 'lost'}
+          gameOver={gameState.status === "won" || gameState.status === "lost"}
         />
       </div>
 
@@ -128,24 +159,36 @@ export function MinesweeperGame() {
           </h3>
         </div>
         <p className="text-sm text-mi-yellow mb-4 italic">
-          &ldquo;Agent, your mission is to locate and defuse all explosive devices. Proceed with extreme caution...&rdquo;
+          &ldquo;Agent, your mission is to locate and defuse all explosive
+          devices. Proceed with extreme caution...&rdquo;
         </p>
         <ul className="text-sm text-mi-electric-blue space-y-2">
           <li className="flex items-start gap-2">
             <span className="text-mi-cyber-green">▸</span>
-            <span><strong className="text-white">Click</strong> to reveal sectors</span>
+            <span>
+              <strong className="text-white">Click</strong> to reveal sectors
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-mi-cyber-green">▸</span>
-            <span><strong className="text-white">Right-click</strong> or <strong className="text-white">long-press</strong> to mark threats</span>
+            <span>
+              <strong className="text-white">Right-click</strong> or{" "}
+              <strong className="text-white">long-press</strong> to mark threats
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-mi-cyber-green">▸</span>
-            <span>Numbers indicate <strong className="text-white">proximity to explosives</strong></span>
+            <span>
+              Numbers indicate{" "}
+              <strong className="text-white">proximity to explosives</strong>
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-mi-cyber-green">▸</span>
-            <span><strong className="text-white">Neutralize all threats</strong> to complete the mission!</span>
+            <span>
+              <strong className="text-white">Neutralize all threats</strong> to
+              complete the mission!
+            </span>
           </li>
         </ul>
         <div className="mt-4 pt-4 border-t border-mi-red/20 text-center">

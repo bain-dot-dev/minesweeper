@@ -94,10 +94,16 @@ export class AudioManager implements IAudioManager {
 
   // For mobile audio unlock
   private unlocked: boolean = false;
+  private unlockAttempts: number = 0;
+  private maxUnlockAttempts: number = 5;
+  private showUnlockPrompt: boolean = false;
 
   // Track last music track for resuming when toggling music back on
   private lastMusicTrack: string | null = null;
   private wasMusicPlaying: boolean = false;
+
+  // Event listeners for unlock prompt
+  private unlockPromptListeners: Array<() => void> = [];
 
   constructor(initialSettings?: Partial<AudioSettings>) {
     this.state = {
@@ -175,37 +181,177 @@ export class AudioManager implements IAudioManager {
 
   /**
    * Setup mobile audio unlock (iOS/Android require user interaction)
+   * Enhanced for World Coin app and other embedded environments
    */
   private setupMobileUnlock(): void {
     const unlock = async () => {
-      if (this.unlocked) return;
+      if (this.unlocked || this.unlockAttempts >= this.maxUnlockAttempts)
+        return;
 
-      if (this.audioContext && this.audioContext.state === "suspended") {
-        await this.audioContext.resume();
-      }
+      console.log(
+        `🔓 Audio unlock attempt ${this.unlockAttempts + 1}/${
+          this.maxUnlockAttempts
+        }`
+      );
+      this.unlockAttempts++;
 
-      // Play silent sound to unlock
-      const silentAudio = new Audio();
-      silentAudio.src =
-        "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAA4Rza9MAAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
-      silentAudio.volume = 0;
       try {
-        await silentAudio.play();
-        this.unlocked = true;
-      } catch {
-        // Expected on first load - will unlock on user interaction
-        // console.warn('Audio unlock failed - waiting for user interaction');
-      }
+        // Resume AudioContext if suspended
+        if (this.audioContext && this.audioContext.state === "suspended") {
+          console.log("🔓 Resuming suspended AudioContext");
+          await this.audioContext.resume();
+        }
 
-      // Remove listeners after unlock
-      document.removeEventListener("touchstart", unlock);
-      document.removeEventListener("touchend", unlock);
-      document.removeEventListener("click", unlock);
+        // Create and play silent audio to unlock
+        const silentAudio = new Audio();
+        silentAudio.src =
+          "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+        silentAudio.volume = 0;
+        silentAudio.preload = "auto";
+
+        // Try to play the silent audio
+        await silentAudio.play();
+
+        console.log("✅ Audio unlocked successfully!");
+        this.unlocked = true;
+
+        // Remove all event listeners
+        this.removeUnlockListeners();
+
+        // Try to start any pending music
+        this.tryStartPendingMusic();
+      } catch (error) {
+        console.warn(
+          `⚠️ Audio unlock failed (attempt ${this.unlockAttempts}):`,
+          error
+        );
+
+        // If this was the last attempt, show user guidance
+        if (this.unlockAttempts >= this.maxUnlockAttempts) {
+          console.warn(
+            "🔇 Audio unlock failed after maximum attempts. User interaction required."
+          );
+          this.showAudioUnlockGuidance();
+        }
+      }
     };
 
-    document.addEventListener("touchstart", unlock, { once: true });
-    document.addEventListener("touchend", unlock, { once: true });
-    document.addEventListener("click", unlock, { once: true });
+    // Add multiple event listeners for better compatibility
+    this.addUnlockListeners(unlock);
+
+    // Also try to unlock immediately if we're in a context that allows it
+    setTimeout(() => {
+      if (!this.unlocked) {
+        unlock();
+      }
+    }, 100);
+  }
+
+  /**
+   * Add event listeners for audio unlock
+   */
+  private addUnlockListeners(unlock: (event?: Event) => void): void {
+    const events = [
+      "click",
+      "touchstart",
+      "touchend",
+      "mousedown",
+      "keydown",
+      "gesturestart",
+      "gesturechange",
+      "gestureend",
+    ];
+
+    events.forEach((eventType) => {
+      document.addEventListener(eventType, unlock, {
+        once: true,
+        passive: true,
+        capture: true,
+      });
+    });
+  }
+
+  /**
+   * Remove all unlock event listeners
+   */
+  private removeUnlockListeners(): void {
+    const events = [
+      "click",
+      "touchstart",
+      "touchend",
+      "mousedown",
+      "keydown",
+      "gesturestart",
+      "gesturechange",
+      "gestureend",
+    ];
+
+    events.forEach((eventType) => {
+      document.removeEventListener(eventType, () => {}, true);
+    });
+  }
+
+  /**
+   * Try to start any pending music after unlock
+   */
+  private tryStartPendingMusic(): void {
+    if (this.settings.musicEnabled && this.lastMusicTrack) {
+      console.log(
+        "🎵 Starting pending music after unlock:",
+        this.lastMusicTrack
+      );
+      this.playMusic(this.lastMusicTrack, { loop: true, fadeIn: 1000 });
+    }
+  }
+
+  /**
+   * Show guidance to user when audio unlock fails
+   */
+  private showAudioUnlockGuidance(): void {
+    console.warn(
+      "🔇 Audio is blocked. Please tap anywhere on the screen to enable audio."
+    );
+    this.showUnlockPrompt = true;
+    this.notifyUnlockPromptListeners();
+  }
+
+  /**
+   * Add listener for unlock prompt visibility changes
+   */
+  addUnlockPromptListener(listener: () => void): void {
+    this.unlockPromptListeners.push(listener);
+  }
+
+  /**
+   * Remove listener for unlock prompt visibility changes
+   */
+  removeUnlockPromptListener(listener: () => void): void {
+    const index = this.unlockPromptListeners.indexOf(listener);
+    if (index > -1) {
+      this.unlockPromptListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Notify all listeners about unlock prompt state change
+   */
+  private notifyUnlockPromptListeners(): void {
+    this.unlockPromptListeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Get unlock prompt visibility state
+   */
+  getUnlockPromptVisible(): boolean {
+    return this.showUnlockPrompt;
+  }
+
+  /**
+   * Dismiss unlock prompt
+   */
+  dismissUnlockPrompt(): void {
+    this.showUnlockPrompt = false;
+    this.notifyUnlockPromptListeners();
   }
 
   /**
@@ -344,6 +490,13 @@ export class AudioManager implements IAudioManager {
   playSound(event: AudioEventType, config?: Partial<AudioConfig>): void {
     if (!this.settings.soundEnabled) return;
 
+    // If audio is not unlocked, try to unlock it
+    if (!this.unlocked) {
+      console.log("🔓 Audio not unlocked, attempting unlock for sound:", event);
+      this.setupMobileUnlock();
+      return;
+    }
+
     const pool = this.soundPools.get(event);
 
     // If not loaded, try to play immediately with Audio element
@@ -359,9 +512,18 @@ export class AudioManager implements IAudioManager {
           (this.settings.masterVolume / 100);
 
         quickAudio.volume = finalVolume;
-        quickAudio.play().catch(() => {
-          // Ignore playback errors
-        });
+        quickAudio
+          .play()
+          .then(() => {
+            console.log("✅ Sound played successfully:", event);
+          })
+          .catch((error) => {
+            console.warn("⚠️ Sound playback failed:", event, error);
+            // Try to unlock audio if it fails
+            if (!this.unlocked) {
+              this.setupMobileUnlock();
+            }
+          });
 
         // Load into pool for next time (background)
         this.loadSound(event, path).catch(() => {
@@ -397,12 +559,22 @@ export class AudioManager implements IAudioManager {
       "🎵 playMusic called:",
       trackName,
       "musicEnabled:",
-      this.settings.musicEnabled
+      this.settings.musicEnabled,
+      "unlocked:",
+      this.unlocked
     );
 
     if (!this.settings.musicEnabled) {
       console.log("🎵 Music is disabled, storing intent to play");
       this.wasMusicPlaying = true;
+      return;
+    }
+
+    // If audio is not unlocked, try to unlock it and store the intent
+    if (!this.unlocked) {
+      console.log("🔓 Audio not unlocked, storing music intent:", trackName);
+      this.wasMusicPlaying = true;
+      this.setupMobileUnlock();
       return;
     }
 

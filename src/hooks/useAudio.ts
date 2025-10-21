@@ -406,3 +406,38 @@ export function useAudioPreloader() {
     error,
   };
 }
+
+/**
+ * Hook for managing audio unlock prompt
+ */
+export function useAudioUnlockPrompt() {
+  const audioManagerRef = useRef(getAudioManager());
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const audioManager = audioManagerRef.current;
+
+    // Check initial state
+    setIsVisible(audioManager.getUnlockPromptVisible());
+
+    // Listen for changes
+    const handleChange = () => {
+      setIsVisible(audioManager.getUnlockPromptVisible());
+    };
+
+    audioManager.addUnlockPromptListener(handleChange);
+
+    return () => {
+      audioManager.removeUnlockPromptListener(handleChange);
+    };
+  }, []);
+
+  const dismiss = useCallback(() => {
+    audioManagerRef.current.dismissUnlockPrompt();
+  }, []);
+
+  return {
+    isVisible,
+    dismiss,
+  };
+}

@@ -97,6 +97,7 @@ export class AudioManager implements IAudioManager {
   private unlockAttempts: number = 0;
   private maxUnlockAttempts: number = 5;
   private showUnlockPrompt: boolean = false;
+  private isWorldCoinApp: boolean = false;
 
   // Track last music track for resuming when toggling music back on
   private lastMusicTrack: string | null = null;
@@ -119,6 +120,30 @@ export class AudioManager implements IAudioManager {
       ...DEFAULT_AUDIO_SETTINGS,
       ...initialSettings,
     };
+
+    // Detect World Coin app environment
+    this.detectWorldCoinApp();
+  }
+
+  /**
+   * Detect if running in World Coin app environment
+   */
+  private detectWorldCoinApp(): void {
+    // Check for World Coin app indicators
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isWorldCoin =
+      userAgent.includes("worldcoin") ||
+      userAgent.includes("worldid") ||
+      window.location.hostname.includes("worldcoin") ||
+      // Check for World Coin app specific globals
+      (window as unknown as { __WORLDCOIN__?: boolean }).__WORLDCOIN__ ||
+      (window as unknown as { __WORLDID__?: boolean }).__WORLDID__ ||
+      // Check for embedded app indicators
+      window !== window.top ||
+      document.referrer.includes("worldcoin");
+
+    this.isWorldCoinApp = isWorldCoin;
+    console.log("🌍 World Coin app detected:", isWorldCoin);
   }
 
   /**
@@ -191,7 +216,7 @@ export class AudioManager implements IAudioManager {
       console.log(
         `🔓 Audio unlock attempt ${this.unlockAttempts + 1}/${
           this.maxUnlockAttempts
-        }`
+        } (World Coin: ${this.isWorldCoinApp})`
       );
       this.unlockAttempts++;
 
@@ -202,15 +227,14 @@ export class AudioManager implements IAudioManager {
           await this.audioContext.resume();
         }
 
-        // Create and play silent audio to unlock
-        const silentAudio = new Audio();
-        silentAudio.src =
-          "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-        silentAudio.volume = 0;
-        silentAudio.preload = "auto";
-
-        // Try to play the silent audio
-        await silentAudio.play();
+        // For World Coin app, use a more aggressive unlock strategy
+        if (this.isWorldCoinApp) {
+          // Try multiple unlock methods for World Coin app
+          await this.unlockForWorldCoinApp();
+        } else {
+          // Standard unlock for regular browsers
+          await this.standardUnlock();
+        }
 
         console.log("✅ Audio unlocked successfully!");
         this.unlocked = true;
@@ -239,16 +263,57 @@ export class AudioManager implements IAudioManager {
     // Add multiple event listeners for better compatibility
     this.addUnlockListeners(unlock);
 
-    // Also try to unlock immediately if we're in a context that allows it
+    // For World Coin app, be more aggressive with unlock attempts
+    const delay = this.isWorldCoinApp ? 50 : 100;
     setTimeout(() => {
       if (!this.unlocked) {
         unlock();
       }
-    }, 100);
+    }, delay);
+  }
+
+  /**
+   * Standard audio unlock for regular browsers
+   */
+  private async standardUnlock(): Promise<void> {
+    const silentAudio = new Audio();
+    silentAudio.src =
+      "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    silentAudio.volume = 0;
+    silentAudio.preload = "auto";
+    await silentAudio.play();
+  }
+
+  /**
+   * Enhanced unlock strategy for World Coin app
+   */
+  private async unlockForWorldCoinApp(): Promise<void> {
+    // Try multiple audio formats for better compatibility
+    const audioFormats = [
+      "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=",
+      "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAA4Rza9MAAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==",
+    ];
+
+    for (const format of audioFormats) {
+      try {
+        const silentAudio = new Audio();
+        silentAudio.src = format;
+        silentAudio.volume = 0;
+        silentAudio.preload = "auto";
+        await silentAudio.play();
+        return; // Success, exit early
+      } catch (error) {
+        console.warn("Audio format failed, trying next:", error);
+        continue;
+      }
+    }
+
+    throw new Error("All audio unlock formats failed");
   }
 
   /**
    * Add event listeners for audio unlock
+   * Enhanced for World Coin app compatibility
    */
   private addUnlockListeners(unlock: (event?: Event) => void): void {
     const events = [
@@ -260,10 +325,22 @@ export class AudioManager implements IAudioManager {
       "gesturestart",
       "gesturechange",
       "gestureend",
+      // World Coin specific events
+      "pointerdown",
+      "pointerup",
+      "focus",
+      "blur",
     ];
 
     events.forEach((eventType) => {
       document.addEventListener(eventType, unlock, {
+        once: true,
+        passive: true,
+        capture: true,
+      });
+
+      // Also add to window for better coverage
+      window.addEventListener(eventType, unlock, {
         once: true,
         passive: true,
         capture: true,

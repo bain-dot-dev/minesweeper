@@ -10,54 +10,104 @@ export default async function Home() {
   return (
     <>
       <Page.Header className="p-0 bg-gradient-to-r from-mi-black via-mi-black/95 to-mi-black border-b-2 border-mi-red shadow-lg shadow-mi-red/20">
-        <div className="flex items-center justify-between px-4 py-3 relative overflow-hidden">
+        <div className="relative overflow-hidden">
           {/* Scanning line animation */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-mi-cyber-green animate-scan opacity-50"></div>
 
-          {/* Mission Title */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Sparks className="w-8 h-8 text-mi-red animate-pulse" />
-              <div className="absolute inset-0 w-8 h-8 text-mi-red opacity-30 animate-ping"></div>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-mi-cyber-green uppercase tracking-wider font-mono">
-                Minesweeper
-              </h1>
-              <p className="text-[10px] text-mi-yellow/70 uppercase tracking-widest">
-                Mission Control
-              </p>
-            </div>
-          </div>
-
-          {/* Right side container with Agent Status and space for audio controls */}
-          <div className="flex items-center gap-4">
-            {/* Agent Status */}
-            <div className="flex items-center gap-2 bg-mi-black/60 backdrop-blur-sm border border-mi-electric-blue/30 rounded-lg px-2 py-1.5">
-              <span className="text-[10px] text-mi-electric-blue/70 uppercase tracking-wider whitespace-nowrap">
-                Agent
-              </span>
-              <p className="text-sm font-bold text-mi-cyber-green capitalize font-mono max-w-20 truncate">
-                {session?.user.username}
-              </p>
+          {/* Desktop Layout */}
+          <div className="sm:hidden flex items-center justify-between px-4 py-3">
+            {/* Mission Title */}
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-6 h-6 bg-gradient-to-br from-mi-cyber-green to-mi-electric-blue rounded-full flex items-center justify-center border-2 border-mi-cyber-green/50 shadow-lg shadow-mi-cyber-green/30">
-                  <CheckCircle
-                    className="w-3 h-3 text-mi-black"
-                    strokeWidth={2.5}
-                  />
-                </div>
-                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-mi-cyber-green rounded-full animate-pulse border border-mi-black"></div>
+                <Sparks className="w-8 h-8 text-mi-red animate-pulse" />
+                <div className="absolute inset-0 w-8 h-8 text-mi-red opacity-30 animate-ping"></div>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-mi-cyber-green uppercase tracking-wider font-mono">
+                  Minesweeper
+                </h1>
+                <p className="text-[10px] text-mi-yellow/70 uppercase tracking-widest">
+                  Mission Control
+                </p>
               </div>
             </div>
 
-            {/* Spacer for audio controls */}
-            <div className="w-34"></div>
+            {/* Right side container with Agent Status and space for audio controls */}
+            <div className="flex items-center gap-4">
+              {/* Agent Status */}
+              <div className="flex items-center gap-2 bg-mi-black/60 backdrop-blur-sm border border-mi-electric-blue/30 rounded-lg px-2 py-1.5">
+                <span className="text-[10px] text-mi-electric-blue/70 uppercase tracking-wider whitespace-nowrap">
+                  Agent
+                </span>
+                <p className="text-sm font-bold text-mi-cyber-green capitalize font-mono max-w-20 truncate">
+                  {session?.user.username}
+                </p>
+                <div className="relative">
+                  <div className="w-6 h-6 bg-gradient-to-br from-mi-cyber-green to-mi-electric-blue rounded-full flex items-center justify-center border-2 border-mi-cyber-green/50 shadow-lg shadow-mi-cyber-green/30">
+                    <CheckCircle
+                      className="w-3 h-3 text-mi-black"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-mi-cyber-green rounded-full animate-pulse border border-mi-black"></div>
+                </div>
+              </div>
+
+              {/* Spacer for audio controls */}
+              <div className="w-34"></div>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden px-4 py-3">
+            {/* Mission Title */}
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="relative">
+                <Sparks className="w-8 h-8 text-mi-red animate-pulse" />
+                <div className="absolute inset-0 w-8 h-8 text-mi-red opacity-30 animate-ping"></div>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-mi-cyber-green uppercase tracking-wider font-mono">
+                  Minesweeper
+                </h1>
+                <p className="text-[10px] text-mi-yellow/70 uppercase tracking-widest">
+                  Mission Control
+                </p>
+              </div>
+            </div>
+
+            {/* Agent Status and Audio Controls Row */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Agent Status */}
+              <div className="flex items-center gap-2 bg-mi-black/60 backdrop-blur-sm border border-mi-electric-blue/30 rounded-lg px-2 py-1.5">
+                <span className="text-[10px] text-mi-electric-blue/70 uppercase tracking-wider whitespace-nowrap">
+                  Agent
+                </span>
+                <p className="text-sm font-bold text-mi-cyber-green capitalize font-mono max-w-20 truncate">
+                  {session?.user.username}
+                </p>
+                <div className="relative">
+                  <div className="w-6 h-6 bg-gradient-to-br from-mi-cyber-green to-mi-electric-blue rounded-full flex items-center justify-center border-2 border-mi-cyber-green/50 shadow-lg shadow-mi-cyber-green/30">
+                    <CheckCircle
+                      className="w-3 h-3 text-mi-black"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-mi-cyber-green rounded-full animate-pulse border border-mi-black"></div>
+                </div>
+              </div>
+
+              {/* Audio Controls Placeholder - will be moved here by MinesweeperGame */}
+              <div
+                id="mobile-audio-controls"
+                className="flex gap-2 items-center"
+              ></div>
+            </div>
           </div>
         </div>
       </Page.Header>
       <Page.Main className="flex flex-col overflow-hidden bg-gradient-to-b from-mi-black via-mi-black/98 to-mi-black p-0">
-        <div className="flex-1 overflow-y-auto flex flex-col items-center pt-6">
+        <div className="flex-1 overflow-y-auto flex flex-col items-center">
           {/* Agent Intel Panel */}
           {/* {session?.user && (
             <div className="w-full max-w-lg mb-6 px-4">

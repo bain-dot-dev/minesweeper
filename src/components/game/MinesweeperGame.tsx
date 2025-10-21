@@ -68,6 +68,40 @@ export function MinesweeperGame() {
     // Music will start when game begins
   }, [playMenuMusic]);
 
+  // Move mobile audio controls to header on mobile
+  useEffect(() => {
+    const moveMobileAudioControls = () => {
+      const mobileControls = document.getElementById(
+        "mobile-audio-controls-container"
+      );
+      const targetContainer = document.getElementById("mobile-audio-controls");
+
+      if (mobileControls && targetContainer && window.innerWidth < 768) {
+        // Move the controls to the header
+        targetContainer.appendChild(mobileControls);
+        mobileControls.className = "flex gap-2 items-center";
+      } else if (mobileControls && window.innerWidth >= 768) {
+        // Move back to original position on desktop
+        const gameContainer = document.querySelector(
+          ".flex.flex-col.items-center.gap-6.p-4"
+        );
+        if (gameContainer) {
+          gameContainer.insertBefore(mobileControls, gameContainer.firstChild);
+          mobileControls.className =
+            "md:hidden fixed top-4 right-4 z-50 gap-2 items-center";
+        }
+      }
+    };
+
+    // Move on mount and resize
+    moveMobileAudioControls();
+    window.addEventListener("resize", moveMobileAudioControls);
+
+    return () => {
+      window.removeEventListener("resize", moveMobileAudioControls);
+    };
+  }, []);
+
   // Handle game status changes
   useEffect(() => {
     if (gameState.status === "won") {
@@ -118,8 +152,17 @@ export function MinesweeperGame() {
       {/* Audio Loading Indicator */}
       <AudioLoadingIndicator />
 
-      {/* Audio Controls */}
-      <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
+      {/* Audio Controls - Desktop */}
+      <div className="sm:hidden flex fixed top-4 right-4 z-50 gap-2 items-center">
+        <CompactAudioControls />
+        <AudioSettings />
+      </div>
+
+      {/* Audio Controls - Mobile */}
+      <div
+        className="md:hidden fixed top-4 right-4 z-50 gap-2 items-center"
+        id="mobile-audio-controls-container"
+      >
         <CompactAudioControls />
         <AudioSettings />
       </div>

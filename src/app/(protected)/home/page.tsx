@@ -30,30 +30,37 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Agent Status */}
-          <div className="flex items-center gap-3 bg-mi-black/60 backdrop-blur-sm border border-mi-electric-blue/30 rounded-lg px-3 py-2">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-mi-electric-blue/70 uppercase tracking-wider">
+          {/* Right side container with Agent Status and space for audio controls */}
+          <div className="flex items-center gap-4">
+            {/* Agent Status */}
+            <div className="flex items-center gap-2 bg-mi-black/60 backdrop-blur-sm border border-mi-electric-blue/30 rounded-lg px-2 py-1.5">
+              <span className="text-[10px] text-mi-electric-blue/70 uppercase tracking-wider whitespace-nowrap">
                 Agent
               </span>
-              <p className="text-sm font-bold text-mi-cyber-green capitalize font-mono">
+              <p className="text-sm font-bold text-mi-cyber-green capitalize font-mono max-w-20 truncate">
                 {session?.user.username}
               </p>
-            </div>
-            <div className="relative">
-              <div className="w-9 h-9 bg-gradient-to-br from-mi-cyber-green to-mi-electric-blue rounded-full flex items-center justify-center border-2 border-mi-cyber-green/50 shadow-lg shadow-mi-cyber-green/30">
-                <CheckCircle className="w-5 h-5 text-mi-black" strokeWidth={2.5} />
+              <div className="relative">
+                <div className="w-6 h-6 bg-gradient-to-br from-mi-cyber-green to-mi-electric-blue rounded-full flex items-center justify-center border-2 border-mi-cyber-green/50 shadow-lg shadow-mi-cyber-green/30">
+                  <CheckCircle
+                    className="w-3 h-3 text-mi-black"
+                    strokeWidth={2.5}
+                  />
+                </div>
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-mi-cyber-green rounded-full animate-pulse border border-mi-black"></div>
               </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-mi-cyber-green rounded-full animate-pulse border border-mi-black"></div>
             </div>
+
+            {/* Spacer for audio controls */}
+            <div className="w-34"></div>
           </div>
         </div>
       </Page.Header>
       <Page.Main className="flex flex-col overflow-hidden bg-gradient-to-b from-mi-black via-mi-black/98 to-mi-black p-0">
         <div className="flex-1 overflow-y-auto flex flex-col items-center pt-6">
           {/* Agent Intel Panel */}
-          {session?.user && (
-            <div className="w-full max-w-md mb-6 px-4">
+          {/* {session?.user && (
+            <div className="w-full max-w-lg mb-6 px-4">
               <div className="p-4 bg-gradient-to-br from-mi-black/90 to-mi-black/70 rounded-lg border border-mi-electric-blue/30 shadow-lg shadow-mi-electric-blue/10 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-mi-cyber-green to-transparent opacity-50"></div>
 
@@ -66,13 +73,19 @@ export default async function Home() {
 
                 <div className="space-y-2 text-xs font-mono">
                   <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
-                    <span className="text-mi-yellow/70 uppercase tracking-wide">Codename:</span>
-                    <span className="text-mi-cyber-green font-bold">{session.user.username}</span>
+                    <span className="text-mi-yellow/70 uppercase tracking-wide">
+                      Codename:
+                    </span>
+                    <span className="text-mi-cyber-green font-bold truncate ml-2">
+                      {session.user.username}
+                    </span>
                   </div>
 
                   {session.user.walletAddress && (
                     <div className="flex items-center justify-between py-1.5 border-b border-mi-red/20">
-                      <span className="text-mi-yellow/70 uppercase tracking-wide">Wallet ID:</span>
+                      <span className="text-mi-yellow/70 uppercase tracking-wide">
+                        Wallet ID:
+                      </span>
                       <span className="text-mi-electric-blue font-bold">
                         {session.user.walletAddress.slice(0, 6)}...
                         {session.user.walletAddress.slice(-4)}
@@ -82,7 +95,9 @@ export default async function Home() {
 
                   {session.user.profilePictureUrl && (
                     <div className="flex items-center justify-between py-1.5">
-                      <span className="text-mi-yellow/70 uppercase tracking-wide">Profile:</span>
+                      <span className="text-mi-yellow/70 uppercase tracking-wide">
+                        Profile:
+                      </span>
                       <span className="text-mi-cyber-green font-bold flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-mi-cyber-green rounded-full"></span>
                         Verified
@@ -92,7 +107,7 @@ export default async function Home() {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
           <MinesweeperGame />
         </div>
       </Page.Main>

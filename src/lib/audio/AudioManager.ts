@@ -140,10 +140,21 @@ export class AudioManager implements IAudioManager {
       (window as unknown as { __WORLDID__?: boolean }).__WORLDID__ ||
       // Check for embedded app indicators
       window !== window.top ||
-      document.referrer.includes("worldcoin");
+      document.referrer.includes("worldcoin") ||
+      // Check for MiniKit presence
+      !!(window as unknown as { MiniKit?: unknown }).MiniKit ||
+      // Check for World App specific features
+      navigator.userAgent.includes("WorldApp") ||
+      // Check if running in iframe (common for mini apps)
+      (window.parent !== window && window.parent !== null);
 
     this.isWorldCoinApp = isWorldCoin;
-    console.log("🌍 World Coin app detected:", isWorldCoin);
+    console.log("🌍 World Coin app detected:", isWorldCoin, {
+      userAgent,
+      isIframe: window !== window.top,
+      hasMiniKit: !!(window as unknown as { MiniKit?: unknown }).MiniKit,
+      referrer: document.referrer,
+    });
   }
 
   /**
@@ -198,6 +209,21 @@ export class AudioManager implements IAudioManager {
         masterGain.connect(this.audioContext.destination);
         masterGain.gain.value = this.settings.masterVolume / 100;
         this.gainNodes.set("master", masterGain);
+      }
+
+      // For World Coin app, immediately try to resume context
+      if (this.isWorldCoinApp && this.audioContext.state === "suspended") {
+        console.log(
+          "🔊 AudioContext suspended in World Coin app, attempting resume..."
+        );
+        this.audioContext
+          .resume()
+          .then(() => {
+            console.log("✅ AudioContext resumed successfully");
+          })
+          .catch((error) => {
+            console.warn("⚠️ Failed to resume AudioContext:", error);
+          });
       }
     } catch (error) {
       console.warn("Failed to create AudioContext:", error);
@@ -288,6 +314,19 @@ export class AudioManager implements IAudioManager {
    * Enhanced unlock strategy for World Coin app
    */
   private async unlockForWorldCoinApp(): Promise<void> {
+    console.log("🔓 Attempting World Coin app audio unlock...");
+
+    // First, try to resume AudioContext if it exists
+    if (this.audioContext && this.audioContext.state === "suspended") {
+      try {
+        console.log("🔊 Resuming suspended AudioContext...");
+        await this.audioContext.resume();
+        console.log("✅ AudioContext resumed successfully");
+      } catch (error) {
+        console.warn("⚠️ Failed to resume AudioContext:", error);
+      }
+    }
+
     // Try multiple audio formats for better compatibility
     const audioFormats = [
       "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=",
@@ -300,12 +339,46 @@ export class AudioManager implements IAudioManager {
         silentAudio.src = format;
         silentAudio.volume = 0;
         silentAudio.preload = "auto";
+
+        // Add error handling
+        silentAudio.addEventListener("error", (e) => {
+          console.warn("Silent audio error:", e);
+        });
+
         await silentAudio.play();
+        console.log("✅ World Coin app audio unlock successful");
         return; // Success, exit early
       } catch (error) {
         console.warn("Audio format failed, trying next:", error);
         continue;
       }
+    }
+
+    // If all formats fail, try a different approach - create a very short audio element
+    try {
+      console.log("🔓 Trying alternative unlock method...");
+      const audio = new Audio();
+      audio.volume = 0;
+      audio.muted = true;
+
+      // Create a very short silent audio
+      const audioContext = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      gainNode.gain.value = 0;
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.01);
+
+      console.log("✅ Alternative unlock method successful");
+      return;
+    } catch (error) {
+      console.warn("Alternative unlock method failed:", error);
     }
 
     throw new Error("All audio unlock formats failed");
@@ -330,6 +403,11 @@ export class AudioManager implements IAudioManager {
       "pointerup",
       "focus",
       "blur",
+      // Additional events for better coverage
+      "mouseup",
+      "keyup",
+      "scroll",
+      "wheel",
     ];
 
     events.forEach((eventType) => {
@@ -345,7 +423,32 @@ export class AudioManager implements IAudioManager {
         passive: true,
         capture: true,
       });
+
+      // For World Coin app, also add to body and any interactive elements
+      if (this.isWorldCoinApp) {
+        document.body.addEventListener(eventType, unlock, {
+          once: true,
+          passive: true,
+          capture: true,
+        });
+      }
     });
+
+    // For World Coin app, add more aggressive unlock attempts
+    if (this.isWorldCoinApp) {
+      // Try unlock on any DOM mutation (user interaction)
+      const observer = new MutationObserver(() => {
+        unlock();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // Clean up observer after first unlock
+      const originalUnlock = unlock;
+      unlock = (event?: Event) => {
+        observer.disconnect();
+        originalUnlock(event);
+      };
+    }
   }
 
   /**
@@ -429,6 +532,35 @@ export class AudioManager implements IAudioManager {
   dismissUnlockPrompt(): void {
     this.showUnlockPrompt = false;
     this.notifyUnlockPromptListeners();
+  }
+
+  /**
+   * Force audio unlock - useful for World Coin app
+   */
+  async forceUnlock(): Promise<void> {
+    if (this.unlocked) return;
+
+    console.log("🔓 Force unlocking audio...");
+
+    try {
+      // Resume AudioContext if suspended
+      if (this.audioContext && this.audioContext.state === "suspended") {
+        await this.audioContext.resume();
+        console.log("✅ AudioContext resumed via force unlock");
+      }
+
+      // Try the appropriate unlock method
+      if (this.isWorldCoinApp) {
+        await this.unlockForWorldCoinApp();
+      } else {
+        await this.standardUnlock();
+      }
+
+      this.unlocked = true;
+      console.log("✅ Force unlock successful");
+    } catch (error) {
+      console.warn("⚠️ Force unlock failed:", error);
+    }
   }
 
   /**
@@ -571,6 +703,33 @@ export class AudioManager implements IAudioManager {
     if (!this.unlocked) {
       console.log("🔓 Audio not unlocked, attempting unlock for sound:", event);
       this.setupMobileUnlock();
+
+      // For World Coin app, try immediate unlock
+      if (this.isWorldCoinApp) {
+        this.forceUnlock();
+      }
+      return;
+    }
+
+    // For World Coin app, ensure AudioContext is resumed
+    if (
+      this.isWorldCoinApp &&
+      this.audioContext &&
+      this.audioContext.state === "suspended"
+    ) {
+      console.log(
+        "🔊 AudioContext suspended, attempting resume for sound:",
+        event
+      );
+      this.audioContext
+        .resume()
+        .then(() => {
+          console.log("✅ AudioContext resumed, retrying sound:", event);
+          this.playSound(event, config);
+        })
+        .catch((error) => {
+          console.warn("⚠️ Failed to resume AudioContext:", error);
+        });
       return;
     }
 
@@ -589,6 +748,15 @@ export class AudioManager implements IAudioManager {
           (this.settings.masterVolume / 100);
 
         quickAudio.volume = finalVolume;
+
+        // For World Coin app, add additional error handling
+        if (this.isWorldCoinApp) {
+          quickAudio.addEventListener("error", (e) => {
+            console.warn("Audio error in World Coin app:", e);
+            this.forceUnlock();
+          });
+        }
+
         quickAudio
           .play()
           .then(() => {
@@ -599,6 +767,9 @@ export class AudioManager implements IAudioManager {
             // Try to unlock audio if it fails
             if (!this.unlocked) {
               this.setupMobileUnlock();
+              if (this.isWorldCoinApp) {
+                this.forceUnlock();
+              }
             }
           });
 
@@ -638,7 +809,9 @@ export class AudioManager implements IAudioManager {
       "musicEnabled:",
       this.settings.musicEnabled,
       "unlocked:",
-      this.unlocked
+      this.unlocked,
+      "isWorldCoinApp:",
+      this.isWorldCoinApp
     );
 
     if (!this.settings.musicEnabled) {
@@ -652,6 +825,38 @@ export class AudioManager implements IAudioManager {
       console.log("🔓 Audio not unlocked, storing music intent:", trackName);
       this.wasMusicPlaying = true;
       this.setupMobileUnlock();
+
+      // For World Coin app, try immediate unlock
+      if (this.isWorldCoinApp) {
+        this.forceUnlock().then(() => {
+          // Retry music after unlock
+          if (this.unlocked) {
+            this.playMusic(trackName, config);
+          }
+        });
+      }
+      return;
+    }
+
+    // For World Coin app, ensure AudioContext is resumed
+    if (
+      this.isWorldCoinApp &&
+      this.audioContext &&
+      this.audioContext.state === "suspended"
+    ) {
+      console.log(
+        "🔊 AudioContext suspended, attempting resume for music:",
+        trackName
+      );
+      this.audioContext
+        .resume()
+        .then(() => {
+          console.log("✅ AudioContext resumed, retrying music:", trackName);
+          this.playMusic(trackName, config);
+        })
+        .catch((error) => {
+          console.warn("⚠️ Failed to resume AudioContext for music:", error);
+        });
       return;
     }
 
@@ -1038,6 +1243,27 @@ export class AudioManager implements IAudioManager {
     const eventType = trackName as AudioEventType;
     const track = this.musicTracks.get(eventType);
     return track ? track.volume : 0;
+  }
+
+  /**
+   * Get World Coin app detection status
+   */
+  isWorldCoinAppEnvironment(): boolean {
+    return this.isWorldCoinApp;
+  }
+
+  /**
+   * Get audio unlock status
+   */
+  isAudioUnlocked(): boolean {
+    return this.unlocked;
+  }
+
+  /**
+   * Get AudioContext state
+   */
+  getAudioContextState(): string | null {
+    return this.audioContext?.state || null;
   }
 
   /**

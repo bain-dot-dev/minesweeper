@@ -23,6 +23,8 @@ import {
 } from "@/components/audio/AudioSettings";
 import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
 import { AudioUnlockPrompt } from "@/components/audio/AudioUnlockPrompt";
+import { WorldCoinAudioUnlock } from "@/components/audio/WorldCoinAudioUnlock";
+import { AudioDebugPanel } from "@/components/audio/AudioDebugPanel";
 
 export function MinesweeperGame() {
   const [showModal, setShowModal] = useState(false);
@@ -117,7 +119,7 @@ export function MinesweeperGame() {
       <AudioLoadingIndicator />
 
       {/* Audio Controls */}
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
+      <div className="fixed top-4 right-4 z-50 flex gap-2 items-center">
         <CompactAudioControls />
         <AudioSettings />
       </div>
@@ -127,6 +129,12 @@ export function MinesweeperGame() {
         isVisible={showUnlockPrompt}
         onDismiss={dismissUnlockPrompt}
       />
+
+      {/* World Coin App Audio Unlock */}
+      <WorldCoinAudioUnlock />
+
+      {/* Audio Debug Panel */}
+      <AudioDebugPanel />
 
       {/* Game Header */}
       <GameHeader

@@ -441,3 +441,47 @@ export function useAudioUnlockPrompt() {
     dismiss,
   };
 }
+
+/**
+ * Hook for World Coin app audio management
+ */
+export function useWorldCoinAudio() {
+  const audioManagerRef = useRef(getAudioManager());
+  const [isWorldCoinApp, setIsWorldCoinApp] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [contextState, setContextState] = useState<string | null>(null);
+
+  useEffect(() => {
+    const audioManager = audioManagerRef.current;
+
+    // Check initial state
+    setIsWorldCoinApp(audioManager.isWorldCoinAppEnvironment());
+    setIsUnlocked(audioManager.isAudioUnlocked());
+    setContextState(audioManager.getAudioContextState());
+
+    // Poll for changes
+    const interval = setInterval(() => {
+      setIsWorldCoinApp(audioManager.isWorldCoinAppEnvironment());
+      setIsUnlocked(audioManager.isAudioUnlocked());
+      setContextState(audioManager.getAudioContextState());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const forceUnlock = useCallback(async () => {
+    return audioManagerRef.current.forceUnlock();
+  }, []);
+
+  const testSound = useCallback(() => {
+    audioManagerRef.current.playSound("menu_click", { volume: 0.3 });
+  }, []);
+
+  return {
+    isWorldCoinApp,
+    isUnlocked,
+    contextState,
+    forceUnlock,
+    testSound,
+  };
+}

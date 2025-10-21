@@ -12,22 +12,23 @@ import { GameHeader } from "./GameHeader";
 import { GameOverModal } from "./GameOverModal";
 import { DifficultyLevel } from "@/types/game";
 import {
+  useGameAudio,
   useGameStateAudio,
   useDynamicMusic,
   useUISounds,
-  useAudioUnlockPrompt,
 } from "@/hooks/useAudio";
 import {
   AudioSettings,
   CompactAudioControls,
 } from "@/components/audio/AudioSettings";
 import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
-import { AudioUnlockPrompt } from "@/components/audio/AudioUnlockPrompt";
 import { WorldCoinAudioUnlock } from "@/components/audio/WorldCoinAudioUnlock";
 import { AudioDebugPanel } from "@/components/audio/AudioDebugPanel";
+import { GameStartModal } from "./GameStartModal";
 
 export function MinesweeperGame() {
   const [showModal, setShowModal] = useState(false);
+  const [showStartModal, setShowStartModal] = useState(false);
   const {
     gameState,
     timer,
@@ -37,6 +38,21 @@ export function MinesweeperGame() {
     changeDifficulty,
   } = useMinesweeper("easy");
 
+  // Initialize main audio system
+  const { audioManager } = useGameAudio();
+
+  // Debug audio initialization
+  useEffect(() => {
+    console.log("🎵 Audio system initialized:", {
+      initialized: audioManager.state.initialized,
+      loading: audioManager.state.loading,
+      error: audioManager.state.error,
+      loadedTracks: audioManager.state.loadedTracks.size,
+      unlocked: audioManager.isAudioUnlocked(),
+      isWorldCoinApp: audioManager.isWorldCoinAppEnvironment(),
+    });
+  }, [audioManager]);
+
   // Audio hooks
   const {
     playVictorySound,
@@ -45,8 +61,6 @@ export function MinesweeperGame() {
     playMenuMusic,
   } = useGameStateAudio();
   const { playDifficultyChange } = useUISounds();
-  const { isVisible: showUnlockPrompt, dismiss: dismissUnlockPrompt } =
-    useAudioUnlockPrompt();
 
   // Dynamic music based on game state
   useDynamicMusic({
@@ -61,6 +75,14 @@ export function MinesweeperGame() {
   const remainingMines = useMemo(() => {
     return gameState.config.mines - gameState.flagCount;
   }, [gameState.config.mines, gameState.flagCount]);
+
+  // Check if this is the first visit and show start modal
+  useEffect(() => {
+    const hasSeenBefore = localStorage.getItem("minesweeper-game-start-seen");
+    if (!hasSeenBefore) {
+      setShowStartModal(true);
+    }
+  }, []);
 
   // Play menu music after first interaction (prevents blocking)
   useEffect(() => {
@@ -104,12 +126,21 @@ export function MinesweeperGame() {
 
   // Handle game status changes
   useEffect(() => {
+    console.log("🎮 Game status changed:", {
+      status: gameState.status,
+      firstClick: gameState.firstClick,
+      audioUnlocked: audioManager.isAudioUnlocked(),
+    });
+
     if (gameState.status === "won") {
+      console.log("🎉 Playing victory sound");
       playVictorySound();
     } else if (gameState.status === "lost") {
+      console.log("💥 Playing defeat sound");
       playDefeatSound();
     } else if (gameState.status === "playing" && !gameState.firstClick) {
       // Start gameplay music when first move is made
+      console.log("🎵 Starting gameplay music");
       startGameplayMusic();
     }
   }, [
@@ -118,6 +149,7 @@ export function MinesweeperGame() {
     playVictorySound,
     playDefeatSound,
     startGameplayMusic,
+    audioManager,
   ]);
 
   // Show modal when game ends
@@ -136,15 +168,29 @@ export function MinesweeperGame() {
   }
 
   const handleDifficultyChange = (difficulty: DifficultyLevel) => {
+    console.log("🎛️ Difficulty changed:", difficulty);
     changeDifficulty(difficulty);
     setShowModal(false);
     playDifficultyChange();
   };
 
   const handleReset = () => {
+    console.log("🔄 Game reset");
     resetGame();
     setShowModal(false);
+    // Don't show start modal on reset - only on first visit
     playMenuMusic();
+  };
+
+  const handleStartGame = () => {
+    console.log("🚀 Game started");
+    setShowStartModal(false);
+    // Start gameplay music when game begins
+    startGameplayMusic();
+  };
+
+  const handleDismissStartModal = () => {
+    setShowStartModal(false);
   };
 
   return (
@@ -167,10 +213,11 @@ export function MinesweeperGame() {
         <AudioSettings />
       </div>
 
-      {/* Audio Unlock Prompt */}
-      <AudioUnlockPrompt
-        isVisible={showUnlockPrompt}
-        onDismiss={dismissUnlockPrompt}
+      {/* Game Start Modal */}
+      <GameStartModal
+        isVisible={showStartModal}
+        onStart={handleStartGame}
+        onDismiss={handleDismissStartModal}
       />
 
       {/* World Coin App Audio Unlock */}
@@ -196,57 +243,6 @@ export function MinesweeperGame() {
           onCellRightClick={handleCellRightClick}
           gameOver={gameState.status === "won" || gameState.status === "lost"}
         />
-      </div>
-
-      {/* Mission Briefing */}
-      <div className="bg-gradient-to-br from-mi-black/95 to-mi-black/80 rounded-lg p-6 shadow-2xl max-w-2xl w-full border border-mi-red/30">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-2 h-2 bg-mi-red rounded-full animate-pulse" />
-          <h3
-            className="font-bold text-xl uppercase tracking-wide text-mi-cyber-green"
-            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-          >
-            Mission Briefing
-          </h3>
-        </div>
-        <p className="text-sm text-mi-yellow mb-4 italic">
-          &ldquo;Agent, your mission is to locate and defuse all explosive
-          devices. Proceed with extreme caution...&rdquo;
-        </p>
-        <ul className="text-sm text-mi-electric-blue space-y-2">
-          <li className="flex items-start gap-2">
-            <span className="text-mi-cyber-green">▸</span>
-            <span>
-              <strong className="text-white">Click</strong> to reveal sectors
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-mi-cyber-green">▸</span>
-            <span>
-              <strong className="text-white">Right-click</strong> or{" "}
-              <strong className="text-white">long-press</strong> to mark threats
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-mi-cyber-green">▸</span>
-            <span>
-              Numbers indicate{" "}
-              <strong className="text-white">proximity to explosives</strong>
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-mi-cyber-green">▸</span>
-            <span>
-              <strong className="text-white">Neutralize all threats</strong> to
-              complete the mission!
-            </span>
-          </li>
-        </ul>
-        <div className="mt-4 pt-4 border-t border-mi-red/20 text-center">
-          <p className="text-xs text-mi-orange/70 italic">
-            This message will self-destruct... just kidding. Good luck, Agent.
-          </p>
-        </div>
       </div>
 
       {/* Game Over Modal */}

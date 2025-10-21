@@ -20,21 +20,21 @@ export const AUDIO_PATHS: AudioLibrary = {
   gameplay: {
     cell_reveal: "/audio/sfx/gameplay/reveal_digital.mp3",
     cell_flag: "/audio/sfx/gameplay/flag_place.mp3",
-    cell_unflag: "/audio/sfx/gameplay/flag_remove.mp3",
+    cell_unflag: "/audio/sfx/gameplay/flag_place.mp3", // Use flag_place as fallback
     cascade_reveal: "/audio/sfx/gameplay/cascade_whoosh.mp3",
-    safe_reveal: "/audio/sfx/gameplay/safe_beep.mp3",
+    safe_reveal: "/audio/sfx/gameplay/reveal_digital.mp3", // Use reveal_digital as fallback
     number_1: "/audio/sfx/gameplay/numbers/beep_1.mp3",
     number_2: "/audio/sfx/gameplay/numbers/beep_2.mp3",
-    number_3: "/audio/sfx/gameplay/numbers/beep_3.mp3",
-    number_4: "/audio/sfx/gameplay/numbers/beep_4.mp3",
-    number_5: "/audio/sfx/gameplay/numbers/beep_5.mp3",
-    number_6: "/audio/sfx/gameplay/numbers/beep_6.mp3",
-    number_7: "/audio/sfx/gameplay/numbers/beep_7.mp3",
-    number_8: "/audio/sfx/gameplay/numbers/beep_8.mp3",
+    number_3: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
+    number_4: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
+    number_5: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
+    number_6: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
+    number_7: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
+    number_8: "/audio/sfx/gameplay/numbers/beep_2.mp3", // Use beep_2 as fallback
   },
   danger: {
     bomb_explode: "/audio/sfx/danger/explosion_big.mp3",
-    bomb_warning: "/audio/sfx/danger/warning_beep.mp3",
+    bomb_warning: "/audio/sfx/danger/alarm_warning.mp3", // Use alarm_warning as fallback
     countdown: "/audio/sfx/danger/countdown_tick.mp3",
     critical_alarm: "/audio/sfx/danger/alarm_warning.mp3",
     heartbeat: "/audio/sfx/danger/heartbeat_fast.mp3",
@@ -42,8 +42,8 @@ export const AUDIO_PATHS: AudioLibrary = {
   success: {
     victory: "/audio/sfx/success/victory_fanfare.mp3",
     achievement: "/audio/sfx/success/achievement_chime.mp3",
-    combo_streak: "/audio/sfx/success/streak_sound.mp3",
-    mission_complete: "/audio/sfx/success/mission_complete.mp3",
+    combo_streak: "/audio/sfx/success/achievement_chime.mp3", // Use achievement as fallback
+    mission_complete: "/audio/sfx/success/victory_fanfare.mp3", // Use victory as fallback
   },
   ambient: {
     menu_theme: "/audio/music/menu_theme.mp3",

@@ -164,6 +164,7 @@ export class AudioManager implements IAudioManager {
     if (this.state.initialized) return;
 
     try {
+      console.log("🔊 Starting audio initialization...");
       this.state.loading = true;
 
       // Create AudioContext for advanced features
@@ -171,23 +172,27 @@ export class AudioManager implements IAudioManager {
         this.settings.enable3DAudio ||
         this.settings.audioQuality === "high"
       ) {
+        console.log("🎛️ Creating AudioContext...");
         this.createAudioContext();
       }
 
       // Preload critical sounds
+      console.log("📦 Preloading critical sounds...");
       await this.preloadCriticalSounds();
 
       // Setup mobile audio unlock
+      console.log("🔓 Setting up mobile audio unlock...");
       this.setupMobileUnlock();
 
       this.state.initialized = true;
       this.state.loading = false;
       this.state.error = null;
+      console.log("✅ Audio initialization completed successfully");
     } catch (error) {
       this.state.error =
         error instanceof Error ? error.message : "Failed to initialize audio";
       this.state.loading = false;
-      console.error("Audio initialization failed:", error);
+      console.error("❌ Audio initialization failed:", error);
     }
   }
 
@@ -697,7 +702,17 @@ export class AudioManager implements IAudioManager {
    * Play a sound effect
    */
   playSound(event: AudioEventType, config?: Partial<AudioConfig>): void {
-    if (!this.settings.soundEnabled) return;
+    console.log("🔊 playSound called:", {
+      event,
+      config,
+      soundEnabled: this.settings.soundEnabled,
+      unlocked: this.unlocked,
+    });
+
+    if (!this.settings.soundEnabled) {
+      console.log("🔇 Sound disabled, skipping:", event);
+      return;
+    }
 
     // If audio is not unlocked, try to unlock it
     if (!this.unlocked) {

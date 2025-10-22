@@ -30,9 +30,7 @@ export interface TestSuite {
 
 export type TestFunction = () => void | Promise<void>;
 
-export interface MockGameState extends Partial<GameState> {
-  // Allow partial game states for testing
-}
+export type MockGameState = Partial<GameState>;
 
 export interface MockPaymentResponse {
   success: boolean;
@@ -261,7 +259,7 @@ export class Expect<T> {
     }
   }
 
-  toContain(expected: any): void {
+  toContain(expected: unknown): void {
     if (Array.isArray(this.actual)) {
       if (!this.actual.includes(expected)) {
         throw new Error(`Expected ${JSON.stringify(this.actual)} to contain ${expected}`);
@@ -628,8 +626,8 @@ export class PerformanceTests {
    */
   static testMemoryUsage(): number {
     if ("memory" in performance) {
-      const memory = (performance as any).memory;
-      return Math.round(memory.usedJSHeapSize / 1048576); // MB
+      const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+      return memory ? Math.round(memory.usedJSHeapSize / 1048576) : 0; // MB
     }
     return 0;
   }

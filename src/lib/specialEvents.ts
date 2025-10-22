@@ -55,7 +55,7 @@ export interface EventFeature {
   description: string;
   type: "visual" | "audio" | "gameplay" | "ui" | "social";
   enabled: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface ABTest {
@@ -76,7 +76,7 @@ export interface ABTestVariant {
   name: string;
   description: string;
   weight: number; // 0-1, determines probability of assignment
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   users: string[];
 }
 

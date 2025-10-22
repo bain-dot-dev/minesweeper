@@ -5,11 +5,10 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { getAudioManager } from "@/lib/audio/AudioManager";
+import { useState } from "react";
 import { useWorldCoinAudio } from "@/hooks/useAudio";
 import { cn } from "@/lib/utils";
-import { Bug, SoundHigh, SoundOff, Info } from "iconoir-react";
+import { Bug, SoundHigh, SoundOff, InfoCircle } from "iconoir-react";
 
 interface AudioDebugPanelProps {
   className?: string;
@@ -17,7 +16,6 @@ interface AudioDebugPanelProps {
 
 export function AudioDebugPanel({ className }: AudioDebugPanelProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [audioManager] = useState(() => getAudioManager());
   const { isWorldCoinApp, isUnlocked, contextState, forceUnlock, testSound } =
     useWorldCoinAudio();
 
@@ -156,7 +154,7 @@ export function AudioDebugPanel({ className }: AudioDebugPanelProps) {
           {/* Info */}
           <div className="text-xs text-mi-yellow/70 bg-mi-black/50 rounded p-2">
             <div className="flex items-start gap-2">
-              <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <InfoCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
               <div>
                 <p>This panel helps debug audio issues in World Coin app.</p>
                 <p className="mt-1">

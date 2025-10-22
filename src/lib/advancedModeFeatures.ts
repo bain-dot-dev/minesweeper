@@ -3,7 +3,7 @@
  * Memory Mode Phases, Multi-Round Management, and Special Mechanics
  */
 
-import { GameState, CellState } from "@/types/game";
+import { CellState } from "@/types/game";
 
 // ============================================================================
 // MEMORY MODE
@@ -306,7 +306,9 @@ export class MultiRoundManager {
     totalScore: number;
     winRate: number;
   } {
-    const completed = this.state.rounds.filter((r) => r.endTime !== null).length;
+    const completed = this.state.rounds.filter(
+      (r) => r.endTime !== null
+    ).length;
     const won = this.state.rounds.filter((r) => r.status === "won").length;
     const lost = this.state.rounds.filter((r) => r.status === "lost").length;
     const totalTime = this.state.rounds.reduce(
@@ -442,11 +444,20 @@ export class BlindModeVisibilityManager {
   /**
    * Check if cell is adjacent to any flag
    */
-  private isAdjacentToFlag(x: number, y: number, board: CellState[][]): boolean {
+  private isAdjacentToFlag(
+    x: number,
+    y: number,
+    board: CellState[][]
+  ): boolean {
     const directions = [
-      [-1, -1], [-1, 0], [-1, 1],
-      [0, -1],           [0, 1],
-      [1, -1],  [1, 0],  [1, 1],
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
     ];
 
     for (const [dx, dy] of directions) {
@@ -503,7 +514,7 @@ export class CustomBoardBuilder {
    * Set mine count
    */
   setMineCount(mines: number): this {
-    const maxMines = Math.floor((this.width * this.height) * 0.8);
+    const maxMines = Math.floor(this.width * this.height * 0.8);
     this.mines = Math.max(1, Math.min(maxMines, mines));
     return this;
   }
@@ -536,7 +547,7 @@ export class CustomBoardBuilder {
       minHeight: 5,
       maxHeight: 50,
       minMines: 1,
-      maxMines: Math.floor((this.width * this.height) * 0.8),
+      maxMines: Math.floor(this.width * this.height * 0.8),
     };
   }
 }
@@ -569,17 +580,6 @@ export function createBlindModeVisibilityManager(): BlindModeVisibilityManager {
 export function createCustomBoardBuilder(): CustomBoardBuilder {
   return new CustomBoardBuilder();
 }
-
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
-
-export type {
-  MemoryPhase,
-  MemoryModeState,
-  RoundData,
-  MultiRoundState,
-};
 
 // Import Position if not already defined
 interface Position {

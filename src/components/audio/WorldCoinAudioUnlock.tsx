@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { getAudioManager } from "@/lib/audio/AudioManager";
 import { cn } from "@/lib/utils";
-import { SoundHigh, SoundOff, AlertTriangle } from "iconoir-react";
+import { SoundHigh, SoundOff, WarningTriangle } from "iconoir-react";
 
 interface WorldCoinAudioUnlockProps {
   className?: string;
@@ -112,7 +112,7 @@ export function WorldCoinAudioUnlock({ className }: WorldCoinAudioUnlockProps) {
           </p>
 
           <div className="flex items-center gap-2 text-xs text-mi-electric-blue bg-mi-black/50 rounded p-2">
-            <AlertTriangle className="w-4 h-4" />
+            <WarningTriangle className="w-4 h-4" />
             <span>This is required for the full gaming experience</span>
           </div>
         </div>

@@ -3,7 +3,7 @@
  * Generates boards with recognizable mine patterns
  */
 
-import { CellState, Position, DifficultyConfig } from "@/types/game";
+import { Position, DifficultyConfig } from "@/types/game";
 
 export type PatternType =
   | "horizontal_line"
@@ -244,7 +244,6 @@ export class PatternGenerator {
 
     // Additional crosses at quarters
     const quarterX = Math.floor(this.width / 4);
-    const quarterY = Math.floor(this.height / 4);
 
     for (let y = 0; y < this.height; y++) {
       positions.push({ x: quarterX, y });

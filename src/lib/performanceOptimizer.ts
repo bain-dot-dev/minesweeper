@@ -3,9 +3,6 @@
  * Comprehensive performance monitoring and optimization
  */
 
-import { GameMode } from "@/types/gameMode";
-import { GameState } from "@/types/game";
-
 // ============================================================================
 // PERFORMANCE TYPES
 // ============================================================================
@@ -212,8 +209,8 @@ export class PerformanceMonitor {
 
   private getMemoryUsage(): number {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      return memory.usedJSHeapSize / (1024 * 1024); // Convert to MB
+      const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+      return memory ? memory.usedJSHeapSize / (1024 * 1024) : 0; // Convert to MB
     }
     return 0;
   }
@@ -516,7 +513,7 @@ export class PerformanceOptimizer {
 /**
  * Debounce function for performance optimization
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -530,7 +527,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for performance optimization
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {

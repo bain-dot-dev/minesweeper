@@ -30,7 +30,7 @@ export interface SocialShare {
   description: string;
   image?: string;
   url?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface Friend {
@@ -349,7 +349,7 @@ export class SocialSharingManager {
   /**
    * Share custom content
    */
-  shareCustom(title: string, description: string, data: Record<string, any>): SocialShare {
+  shareCustom(title: string, description: string, data: Record<string, unknown>): SocialShare {
     const share: SocialShare = {
       type: "custom",
       title,

@@ -195,7 +195,6 @@ export function isPerfectGame(gameState: GameState): boolean {
  */
 function calculateEarlyFlagAccuracy(gameState: GameState): number {
   // Simplified: flags placed in first 30% of moves
-  const earlyMoveThreshold = gameState.moveCount * 0.3;
   const correctFlags = calculateCorrectFlags(gameState);
 
   if (correctFlags === 0) return 0;
@@ -214,6 +213,7 @@ export function calculateActionScore(
     adjacentMines?: number;
     comboCount?: number;
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   scoring: ScoringSystem
 ): number {
   let score = 0;

@@ -290,8 +290,7 @@ export function useMinesweeperWithModes(
       });
     },
     [
-      gameState.status,
-      gameState.board,
+      gameState,
       timer,
       playCellRevealSound,
       modeManager,

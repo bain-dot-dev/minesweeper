@@ -90,7 +90,7 @@ export interface AnalyticsEvent {
   userId: string;
   sessionId: string;
   timestamp: number;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -425,7 +425,7 @@ export class AnalyticsManager {
     return "Unknown";
   }
 
-  private trackEvent(eventType: string, data: Record<string, any>): void {
+  private trackEvent(eventType: string, data: Record<string, unknown>): void {
     const event: AnalyticsEvent = {
       eventType,
       userId: this.userId,

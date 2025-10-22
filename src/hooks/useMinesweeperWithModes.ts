@@ -115,7 +115,8 @@ export function useMinesweeperWithModes(
       // Game is not playing, clear the interval
       console.log("⏱️ Game not playing, clearing countdown timer");
     }
-  }, [gameState.status, gameState.timeRemaining, modeManager, timer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.status, modeManager]);
 
   // Update when initialMode changes (for difficulty changes)
   useEffect(() => {

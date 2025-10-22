@@ -303,10 +303,20 @@ export class GameModeManager {
    * Apply continue benefits to game state
    */
   applyContinue(gameState: GameState): Partial<GameState> {
+    // Hide all revealed mines so player can continue playing
+    const resetBoard = gameState.board.map((row) =>
+      row.map((cell) => ({
+        ...cell,
+        // Un-reveal cells that are mines (but keep non-mine cells revealed)
+        isRevealed: cell.isMine ? false : cell.isRevealed,
+      }))
+    );
+
     const updates: Partial<GameState> = {
       continueCount: gameState.continueCount + 1,
       continueTimestamps: [...gameState.continueTimestamps, Date.now()],
       status: "playing",
+      board: resetBoard, // Apply the reset board
     };
 
     // Mode-specific benefits

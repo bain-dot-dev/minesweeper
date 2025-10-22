@@ -82,7 +82,7 @@ export const TIMED_ROUNDS_MODE: GameMode = {
   },
   rules: {
     allowFlags: true,
-    revealOnMineClick: false,
+    revealOnMineClick: true, // Changed to true - hitting a mine ends the game
     numberVisibility: "always",
     firstClickSafe: true,
     cascadeReveal: true,

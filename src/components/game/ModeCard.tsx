@@ -15,6 +15,7 @@ interface ModeCardProps {
   onLeave: () => void;
   isSelected?: boolean;
   isHovered?: boolean;
+  compact?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -32,6 +33,7 @@ export function ModeCard({
   onLeave,
   isSelected = false,
   isHovered = false,
+  compact = false,
 }: ModeCardProps) {
   const categoryGradient =
     CATEGORY_COLORS[mode.category] || "from-gray-500 to-gray-700";
@@ -53,7 +55,8 @@ export function ModeCard({
           isSelected
             ? "border-mi-cyber-green shadow-lg shadow-mi-cyber-green/50"
             : "border-mi-cyber-green/30 hover:border-mi-cyber-green/60",
-          "h-full min-h-[220px]"
+          "h-full",
+          compact ? "min-h-[180px]" : "min-h-[220px]"
         )}
       >
         {/* Selected Indicator */}
@@ -75,17 +78,34 @@ export function ModeCard({
         />
 
         {/* Content */}
-        <div className="p-4 space-y-3 h-full flex flex-col">
+        <div
+          className={cn(
+            "space-y-3 h-full flex flex-col",
+            compact ? "p-3" : "p-4"
+          )}
+        >
           {/* Icon and Title */}
           <div className="space-y-2">
-            <div className="text-4xl">{mode.icon}</div>
-            <h3 className="text-lg font-bold text-white leading-tight">
+            <div className={cn(compact ? "text-3xl" : "text-4xl")}>
+              {mode.icon}
+            </div>
+            <h3
+              className={cn(
+                "font-bold text-white leading-tight",
+                compact ? "text-base" : "text-lg"
+              )}
+            >
               {mode.name}
             </h3>
           </div>
 
           {/* Description */}
-          <p className="text-sm text-gray-400 line-clamp-2 flex-grow">
+          <p
+            className={cn(
+              "text-gray-400 flex-grow",
+              compact ? "text-xs line-clamp-1" : "text-sm line-clamp-2"
+            )}
+          >
             {mode.description}
           </p>
 

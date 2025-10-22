@@ -614,3 +614,60 @@ body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* Game Mode Selector Animations */
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Mission Impossible Dark Blue */
+.mi-dark-blue {
+  background-color: #0f172a;
+}
+
+.bg-mi-dark-blue {
+  background-color: #0f172a;
+}
+
+.bg-mi-dark-blue\/50 {
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+.bg-mi-dark-blue\/80 {
+  background-color: rgba(15, 23, 42, 0.8);
+}
+
+.bg-mi-dark-blue\/90 {
+  background-color: rgba(15, 23, 42, 0.9);
+}
+
+.border-mi-dark-blue {
+  border-color: #0f172a;
+}
+
+.from-mi-dark-blue {
+  --tw-gradient-from: #0f172a;
+  --tw-gradient-to: rgba(15, 23, 42, 0);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-mi-dark-blue {
+  --tw-gradient-to: #0f172a;
+}
+
+.to-mi-dark-blue\/50 {
+  --tw-gradient-to: rgba(15, 23, 42, 0.5);
+}
+
+.to-mi-dark-blue\/90 {
+  --tw-gradient-to: rgba(15, 23, 42, 0.9);
+}

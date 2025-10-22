@@ -19,6 +19,8 @@ interface GameModeSelectorProps {
   onSelectMode: (mode: GameMode) => void;
   currentMode?: string;
   className?: string;
+  showPreview?: boolean;
+  compact?: boolean;
 }
 
 interface Category {
@@ -40,6 +42,8 @@ export function GameModeSelector({
   onSelectMode,
   currentMode,
   className,
+  showPreview = true,
+  compact = false,
 }: GameModeSelectorProps) {
   const [selectedCategory, setSelectedCategory] = useState<
     GameModeCategory | "all"
@@ -81,10 +85,7 @@ export function GameModeSelector({
 
   return (
     <div
-      className={cn(
-        "w-full max-w-7xl mx-auto px-4 py-8 space-y-6",
-        className
-      )}
+      className={cn("w-full max-w-7xl mx-auto px-4 py-8 space-y-6", className)}
     >
       {/* Header */}
       <div className="text-center space-y-2 relative">
@@ -129,11 +130,19 @@ export function GameModeSelector({
 
       {/* Mode Count */}
       <div className="text-center text-sm text-gray-400">
-        {filteredModes.length} {filteredModes.length === 1 ? "mission" : "missions"} available
+        {filteredModes.length}{" "}
+        {filteredModes.length === 1 ? "mission" : "missions"} available
       </div>
 
       {/* Modes Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div
+        className={cn(
+          "grid gap-4",
+          compact
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        )}
+      >
         {filteredModes.map((mode) => (
           <ModeCard
             key={mode.id}
@@ -143,6 +152,7 @@ export function GameModeSelector({
             onLeave={() => setHoveredMode(null)}
             isSelected={currentMode === mode.id}
             isHovered={hoveredMode === mode.id}
+            compact={compact}
           />
         ))}
       </div>
@@ -161,7 +171,7 @@ export function GameModeSelector({
       )}
 
       {/* Mode Preview (Desktop) */}
-      {hoveredModeData && (
+      {showPreview && hoveredModeData && (
         <div className="hidden lg:block">
           <ModePreview mode={hoveredModeData} />
         </div>

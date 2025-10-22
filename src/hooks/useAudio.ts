@@ -162,40 +162,76 @@ export function useCellAudio() {
  * Hook for game state audio (victory, defeat, etc.)
  */
 export function useGameStateAudio() {
-  const { playSound, playMusic, stopMusic, fadeTransition } = useGameAudio();
+  const { playSound, playMusic, stopMusic, fadeTransition, audioManager } =
+    useGameAudio();
 
   const playVictorySound = useCallback(() => {
+    // Stop any current music first
     stopMusic();
+
+    // Play victory sound effect
     playSound("mission_complete", { volume: 0.7 });
+
+    // Wait for sound effect, then play victory theme
     setTimeout(() => {
-      playMusic("victory_theme", { volume: 0.6, loop: false });
+      // Double-check music isn't already playing before starting victory theme
+      if (
+        !audioManager.state.currentMusic ||
+        audioManager.state.currentMusic === "gameplay_tension" ||
+        audioManager.state.currentMusic === "danger_zone"
+      ) {
+        playMusic("victory_theme", { volume: 0.6, loop: false });
+      }
     }, 500);
-  }, [playSound, playMusic, stopMusic]);
+  }, [playSound, playMusic, stopMusic, audioManager]);
 
   const playDefeatSound = useCallback(() => {
+    // Stop music and play defeat sound
     stopMusic();
     playSound("bomb_explode", { volume: 0.8 });
   }, [playSound, stopMusic]);
 
   const startGameplayMusic = useCallback(() => {
+    // Only start if not already playing gameplay music
+    const currentMusic = audioManager.state.currentMusic;
+    if (currentMusic === "gameplay_tension" || currentMusic === "danger_zone") {
+      console.log("🎵 Gameplay music already playing, skipping");
+      return;
+    }
+
+    // Stop any current music first (like menu music)
+    audioManager.stopMusic();
+
+    // Start gameplay music
     playMusic("gameplay_tension", {
       volume: 0.4,
       loop: true,
       fadeIn: 2000,
     });
-  }, [playMusic]);
+  }, [playMusic, audioManager]);
 
   const transitionToDangerMusic = useCallback(() => {
     fadeTransition("gameplay_tension", "danger_zone", 2000);
   }, [fadeTransition]);
 
   const playMenuMusic = useCallback(() => {
+    // Only start if not already playing menu music
+    const currentMusic = audioManager.state.currentMusic;
+    if (currentMusic === "menu_theme") {
+      console.log("🎵 Menu music already playing, skipping");
+      return;
+    }
+
+    // Stop any current music first
+    audioManager.stopMusic();
+
+    // Start menu music
     playMusic("menu_theme", {
       volume: 0.3,
       loop: true,
       fadeIn: 1500,
     });
-  }, [playMusic]);
+  }, [playMusic, audioManager]);
 
   return {
     playVictorySound,

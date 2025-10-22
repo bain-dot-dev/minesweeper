@@ -220,6 +220,7 @@ export function MinesweeperGame() {
       status: gameState.status,
       firstClick: gameState.firstClick,
       audioUnlocked: audioManager.isAudioUnlocked(),
+      currentMusic: audioManager.state.currentMusic,
     });
 
     if (gameState.status === "won") {
@@ -236,8 +237,14 @@ export function MinesweeperGame() {
       gameSystems.onGameEnd(gameState, currentMode, timer.elapsed);
     } else if (gameState.status === "playing" && !gameState.firstClick) {
       // Start gameplay music when first move is made
-      console.log("🎵 Starting gameplay music");
-      startGameplayMusic();
+      // Only start if no music is currently playing or if menu music is playing
+      const currentMusic = audioManager.state.currentMusic;
+      if (!currentMusic || currentMusic === "menu_theme") {
+        console.log("🎵 Starting gameplay music (first click)");
+        startGameplayMusic();
+      } else {
+        console.log("🎵 Gameplay music already playing, skipping");
+      }
 
       // Track game start in game systems
       gameSystems.onGameStart(currentMode, gameState);
@@ -320,6 +327,8 @@ export function MinesweeperGame() {
     setShowModal(false);
     setShowContinueModal(false);
     // Don't show start modal on reset - only on first visit
+    // Stop any playing music before starting menu music
+    audioManager.stopMusic();
     playMenuMusic();
   };
 
@@ -330,8 +339,9 @@ export function MinesweeperGame() {
   const handleStartGame = () => {
     console.log("🚀 Game started");
     setShowStartModal(false);
-    // Start gameplay music when game begins (audio should be unlocked by now)
-    startGameplayMusic();
+    // Stop menu music before gameplay starts
+    // Gameplay music will start automatically on first click
+    audioManager.stopMusic();
   };
 
   const handleDismissStartModal = () => {

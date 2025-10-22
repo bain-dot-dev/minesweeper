@@ -20,10 +20,23 @@ export class GameModeManager {
   initializeGameState(baseState: Partial<GameState>): GameState {
     const config = this.getBoardConfig(1); // Start at level 1
 
+    // Extract difficulty from mode ID for classic modes
+    let difficulty: "easy" | "medium" | "hard" | "custom" = "custom";
+    if (this.mode.id.startsWith("classic-")) {
+      const difficultyFromId = this.mode.id.split("-")[1];
+      if (
+        difficultyFromId === "easy" ||
+        difficultyFromId === "medium" ||
+        difficultyFromId === "hard"
+      ) {
+        difficulty = difficultyFromId;
+      }
+    }
+
     return {
       board: baseState.board || [],
       status: "idle",
-      difficulty: "custom",
+      difficulty,
       config,
       flagCount: 0,
       revealedCount: 0,
@@ -86,9 +99,7 @@ export class GameModeManager {
         ...gameState,
         hitMine: false,
         gameOver: gameState.status === "won" || gameState.status === "lost",
-        timeElapsed: gameState.startTime
-          ? Date.now() - gameState.startTime
-          : 0,
+        timeElapsed: gameState.startTime ? Date.now() - gameState.startTime : 0,
         config: gameState.config,
       });
     }
@@ -109,9 +120,7 @@ export class GameModeManager {
         ...gameState,
         hitMine,
         gameOver: false,
-        timeElapsed: gameState.startTime
-          ? Date.now() - gameState.startTime
-          : 0,
+        timeElapsed: gameState.startTime ? Date.now() - gameState.startTime : 0,
         config: gameState.config,
       });
     }
@@ -217,7 +226,8 @@ export class GameModeManager {
    */
   getTimeLimit(level: number): number | null {
     if (this.mode.config.difficultyProgression) {
-      const progression = this.mode.config.difficultyProgression.progression(level);
+      const progression =
+        this.mode.config.difficultyProgression.progression(level);
       return progression.timeLimit || this.mode.config.timeLimit || null;
     }
     return this.mode.config.timeLimit || null;

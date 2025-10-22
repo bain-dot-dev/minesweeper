@@ -10,17 +10,9 @@ export type GameModeCategory =
   | "challenge"
   | "creative";
 
-export type GameStatus =
-  | 'idle'
-  | 'playing'
-  | 'won'
-  | 'lost'
-  | 'paused';
+export type GameStatus = "idle" | "playing" | "won" | "lost" | "paused";
 
-export type NumberVisibility =
-  | "always"
-  | "conditional"
-  | "hidden";
+export type NumberVisibility = "always" | "conditional" | "hidden";
 
 export interface GameModeConfig {
   boardSize: { width: number; height: number } | "dynamic";
@@ -161,12 +153,19 @@ export interface PaymentRequest {
 export interface PaymentResponse {
   id: string;
   status: "pending" | "success" | "failed";
+  amount: number;
+  currency: string;
+  description: string;
+  metadata: Record<string, unknown>;
   transactionId?: string;
   error?: string;
 }
 
 export interface PaymentResult {
   success: boolean;
+  paymentId?: string;
+  cost?: number;
+  message?: string;
   transactionId?: string;
   error?: string;
 }

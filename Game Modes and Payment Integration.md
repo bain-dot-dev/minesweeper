@@ -491,21 +491,20 @@ const patternMode: GameMode = {
 };
 ```
 
-## Phase 4: World Coin Payment Integration
+## Phase 4: Payment Integration (Updated)
 
 ### 4.1 Payment System Architecture
 
 ```typescript
-// Payment integration using World Coin MCP
+// Simple payment integration system
 interface PaymentSystem {
-  provider: "worldcoin";
-  mcpServer: string; // https://docs.world.org/mcp
-  paymentEndpoint: string; // /mini-apps/commands/pay
+  provider: "generic" | "worldcoin" | "stripe" | "paypal";
   config: PaymentConfig;
+  // Reference materials: World Documentation, World Coin MCP Server, MCP Context 7
 }
 
 interface PaymentConfig {
-  currency: "WLD"; // World Coin
+  currency: "WLD" | "USD" | "EUR"; // Support multiple currencies
   continueOptions: ContinueOption[];
   paymentMethods: PaymentMethod[];
   transactionTimeout: number;
@@ -525,14 +524,11 @@ interface ContinueOption {
 
 ```typescript
 class ContinuePaymentManager {
-  private worldCoinMCP: WorldCoinMCPClient;
+  private paymentClient: PaymentClient;
 
   constructor() {
-    this.worldCoinMCP = new WorldCoinMCPClient({
-      serverUrl: process.env.WORLD_COIN_MCP_SERVER,
-      apiKey: process.env.WORLD_COIN_API_KEY,
-      miniAppId: process.env.MINI_APP_ID,
-    });
+    this.paymentClient = new PaymentClient();
+    // Reference materials: World Documentation, World Coin MCP Server, MCP Context 7
   }
 
   async initiateContinuePayment(
@@ -559,8 +555,8 @@ class ContinuePaymentManager {
         callbackUrl: "/api/payment/continue-callback",
       };
 
-      // Initiate payment via MCP
-      const payment = await this.worldCoinMCP.pay(paymentRequest);
+      // Initiate payment via payment client
+      const payment = await this.paymentClient.pay(paymentRequest);
 
       // Handle payment UI
       await this.showPaymentModal(payment);

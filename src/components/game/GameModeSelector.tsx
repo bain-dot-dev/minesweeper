@@ -21,6 +21,7 @@ interface GameModeSelectorProps {
   className?: string;
   showPreview?: boolean;
   compact?: boolean;
+  onClose?: () => void;
 }
 
 interface Category {
@@ -44,6 +45,7 @@ export function GameModeSelector({
   className,
   showPreview = true,
   compact = false,
+  onClose,
 }: GameModeSelectorProps) {
   const [selectedCategory, setSelectedCategory] = useState<
     GameModeCategory | "all"
@@ -96,6 +98,28 @@ export function GameModeSelector({
         <p className="text-gray-400 text-sm md:text-base">
           Choose your operation mode and begin your mission
         </p>
+
+        {/* Close Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-0 right-0 text-gray-400 hover:text-white transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Search Bar */}

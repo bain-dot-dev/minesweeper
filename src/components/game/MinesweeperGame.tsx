@@ -7,10 +7,15 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useMinesweeper } from "@/hooks/useMinesweeper";
+import { useMinesweeperWithModes } from "@/hooks/useMinesweeperWithModes";
 import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
 import { GameOverModal } from "./GameOverModal";
+import { GameModeSelector } from "./GameModeSelector";
+import { ContinueModal } from "./ContinueModal";
 import { DifficultyLevel } from "@/types/game";
+import { GameMode } from "@/types/gameMode";
+import { CLASSIC_MODE } from "@/config/gameModes";
 import {
   useGameAudio,
   useGameStateAudio,
@@ -25,18 +30,37 @@ import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator"
 import { WorldCoinAudioUnlock } from "@/components/audio/WorldCoinAudioUnlock";
 import { AudioDebugPanel } from "@/components/audio/AudioDebugPanel";
 import { GameStartModal } from "./GameStartModal";
+import { useGameSystems } from "@/lib/gameSystems";
 
 export function MinesweeperGame() {
   const [showModal, setShowModal] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
+  const [showModeSelector, setShowModeSelector] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [currentMode, setCurrentMode] = useState<GameMode>(CLASSIC_MODE);
+  const [useGameModes, setUseGameModes] = useState(false);
+
+  // Game systems integration
+  const gameSystems = useGameSystems();
+
+  // Initialize game systems on component mount
+  useEffect(() => {
+    gameSystems.initialize();
+  }, [gameSystems]);
+
+  // Legacy hook for backward compatibility
+  const legacyGame = useMinesweeper("easy");
+
+  // New game mode hook
   const {
     gameState,
     timer,
+    modeManager,
     handleCellClick,
     handleCellRightClick,
     resetGame,
-    changeDifficulty,
-  } = useMinesweeper("easy");
+    useContinue: continueGame,
+  } = useMinesweeperWithModes(currentMode);
 
   // Initialize main audio system
   const { audioManager } = useGameAudio();
@@ -84,6 +108,39 @@ export function MinesweeperGame() {
   const remainingMines = useMemo(() => {
     return gameState.config.mines - gameState.flagCount;
   }, [gameState.config.mines, gameState.flagCount]);
+
+  // Handle mode selection
+  const handleModeSelect = (mode: GameMode) => {
+    console.log("🎮 Mode selected:", mode.id);
+    setCurrentMode(mode);
+    setShowModeSelector(false);
+    setUseGameModes(true);
+
+    // Track mode selection in game systems
+    gameSystems.analytics.trackModeSelection(mode);
+  };
+
+  // Handle continue
+  const handleContinue = () => {
+    console.log("💳 Using continue for mode:", currentMode.id);
+    if (continueGame) {
+      continueGame();
+
+      // Track continue usage in game systems
+      const cost =
+        gameSystems.socialFeatures.getLeaderboardStats(currentMode.id)
+          ?.userScore || 0;
+      gameSystems.onContinue(currentMode, gameState, cost);
+    }
+    setShowContinueModal(false);
+  };
+
+  // Handle quit
+  const handleQuit = () => {
+    console.log("🚪 Quitting game");
+    setShowContinueModal(false);
+    setShowModal(true);
+  };
 
   // Check if this is the first visit or if audio is not unlocked and show start modal
   useEffect(() => {
@@ -159,13 +216,22 @@ export function MinesweeperGame() {
     if (gameState.status === "won") {
       console.log("🎉 Playing victory sound");
       playVictorySound();
+
+      // Track game end in game systems
+      gameSystems.onGameEnd(gameState, currentMode, timer.elapsed);
     } else if (gameState.status === "lost") {
       console.log("💥 Playing defeat sound");
       playDefeatSound();
+
+      // Track game end in game systems
+      gameSystems.onGameEnd(gameState, currentMode, timer.elapsed);
     } else if (gameState.status === "playing" && !gameState.firstClick) {
       // Start gameplay music when first move is made
       console.log("🎵 Starting gameplay music");
       startGameplayMusic();
+
+      // Track game start in game systems
+      gameSystems.onGameStart(currentMode, gameState);
     }
   }, [
     gameState.status,
@@ -174,26 +240,48 @@ export function MinesweeperGame() {
     playDefeatSound,
     startGameplayMusic,
     audioManager,
+    gameSystems,
+    currentMode,
+    gameState,
+    timer.elapsed,
   ]);
 
   // Show modal when game ends
   const handleGameEnd = () => {
     if (gameState.status === "won" || gameState.status === "lost") {
-      setShowModal(true);
+      // Check if continue is available for lost games
+      if (gameState.status === "lost" && modeManager?.canContinue()) {
+        setShowContinueModal(true);
+      } else {
+        setShowModal(true);
+      }
     }
   };
 
   // Watch for game end
   if (
     (gameState.status === "won" || gameState.status === "lost") &&
-    !showModal
+    !showModal &&
+    !showContinueModal
   ) {
     handleGameEnd();
   }
 
   const handleDifficultyChange = (difficulty: DifficultyLevel) => {
     console.log("🎛️ Difficulty changed:", difficulty);
-    changeDifficulty(difficulty);
+    if (useGameModes) {
+      // Convert difficulty to game mode
+      const modeMap: Record<string, string> = {
+        easy: "classic",
+        medium: "time-attack",
+        hard: "hardcore",
+      };
+      const modeId = modeMap[difficulty] || "classic";
+      // This would need to be implemented to find mode by ID
+      console.log("🎮 Would switch to mode:", modeId);
+    } else {
+      legacyGame.changeDifficulty(difficulty);
+    }
     setShowModal(false);
     playDifficultyChange();
   };
@@ -202,8 +290,13 @@ export function MinesweeperGame() {
     console.log("🔄 Game reset");
     resetGame();
     setShowModal(false);
+    setShowContinueModal(false);
     // Don't show start modal on reset - only on first visit
     playMenuMusic();
+  };
+
+  const handleShowModeSelector = () => {
+    setShowModeSelector(true);
   };
 
   const handleStartGame = () => {
@@ -242,6 +335,29 @@ export function MinesweeperGame() {
         isVisible={showStartModal}
         onStart={handleStartGame}
         onDismiss={handleDismissStartModal}
+      />
+
+      {/* Game Mode Selector */}
+      {showModeSelector && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl">
+            <GameModeSelector
+              onSelectMode={handleModeSelect}
+              currentMode={currentMode.id}
+              onClose={() => setShowModeSelector(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Continue Modal */}
+      <ContinueModal
+        isOpen={showContinueModal}
+        gameMode={currentMode}
+        gameState={gameState}
+        onContinue={handleContinue}
+        onQuit={handleQuit}
+        onClose={() => setShowContinueModal(false)}
       />
 
       {/* World Coin App Audio Unlock */}
@@ -296,6 +412,98 @@ export function MinesweeperGame() {
         onDifficultyChange={handleDifficultyChange}
         onReset={handleReset}
       />
+
+      {/* Game Mode Toggle Button */}
+      <div className="flex gap-4 items-center">
+        <button
+          onClick={handleShowModeSelector}
+          className="px-4 py-2 bg-mi-cyber-green text-black font-semibold rounded-lg hover:bg-mi-electric-blue transition-colors"
+        >
+          🎮 Game Modes
+        </button>
+
+        {useGameModes && (
+          <div className="text-sm text-gray-300">
+            Mode:{" "}
+            <span className="text-mi-cyber-green font-semibold">
+              {currentMode.name}
+            </span>
+            {gameState.score > 0 && (
+              <span className="ml-2">
+                Score:{" "}
+                <span className="text-mi-electric-blue">{gameState.score}</span>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Game Systems Debug Panel */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="bg-mi-dark-blue/50 border border-mi-cyber-green/30 rounded-lg p-4 text-xs text-gray-300 max-w-4xl w-full">
+          <h3 className="text-mi-cyber-green font-semibold mb-2">
+            🎮 Game Systems Status
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-mi-electric-blue font-medium">Analytics</div>
+              <div>
+                Sessions:{" "}
+                {gameSystems.analytics.getAllAnalytics().sessions.length}
+              </div>
+              <div>
+                Events: {gameSystems.analytics.getAllAnalytics().events.length}
+              </div>
+            </div>
+            <div>
+              <div className="text-mi-electric-blue font-medium">
+                Achievements
+              </div>
+              <div>
+                Unlocked:{" "}
+                {gameSystems.achievements.getUnlockedAchievements().length}
+              </div>
+              <div>Points: {gameSystems.achievements.getTotalPoints()}</div>
+            </div>
+            <div>
+              <div className="text-mi-electric-blue font-medium">
+                Challenges
+              </div>
+              <div>
+                Today:{" "}
+                {gameSystems.dailyChallenges.getTodaysChallenges().length}
+              </div>
+              <div>
+                Completed:{" "}
+                {
+                  gameSystems.dailyChallenges.getUserChallengeStats()
+                    .completedChallenges
+                }
+              </div>
+            </div>
+            <div>
+              <div className="text-mi-electric-blue font-medium">
+                Performance
+              </div>
+              <div>
+                Score:{" "}
+                {
+                  gameSystems.performance.getMonitor().getPerformanceReport()
+                    .performanceScore
+                }
+                /100
+              </div>
+              <div>
+                FPS:{" "}
+                {gameSystems.performance
+                  .getMonitor()
+                  .getPerformanceReport()
+                  .averageFPS.toFixed(1)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Game Board */}
       <div className="overflow-x-auto w-full flex justify-center">

@@ -1,437 +1,541 @@
 /**
- * Performance Optimization Utilities
- * Tools for monitoring and optimizing game performance
+ * Performance Optimization System
+ * Comprehensive performance monitoring and optimization
  */
 
-import { GameState, CellState } from "@/types/game";
+import { GameMode } from "@/types/gameMode";
+import { GameState } from "@/types/game";
 
 // ============================================================================
-// PERFORMANCE MONITORING
+// PERFORMANCE TYPES
 // ============================================================================
 
 export interface PerformanceMetrics {
   fps: number;
-  memoryUsage: number; // in MB
-  loadTime: number; // in ms
-  renderTime: number; // in ms
-  cpuUsage: number; // percentage
-  networkLatency: number; // in ms
-  cacheHitRate: number; // percentage
+  frameTime: number;
+  memoryUsage: number;
+  renderTime: number;
+  updateTime: number;
+  inputLatency: number;
   timestamp: number;
 }
 
 export interface PerformanceThresholds {
-  minFPS: number;
-  maxMemory: number;
-  maxLoadTime: number;
-  maxRenderTime: number;
-  maxCPU: number;
-  maxNetworkLatency: number;
+  fps: { warning: number; critical: number };
+  frameTime: { warning: number; critical: number };
+  memoryUsage: { warning: number; critical: number };
+  renderTime: { warning: number; critical: number };
+  updateTime: { warning: number; critical: number };
+  inputLatency: { warning: number; critical: number };
 }
+
+export interface OptimizationConfig {
+  enableAdaptiveQuality: boolean;
+  enableMemoryManagement: boolean;
+  enableFrameRateLimiting: boolean;
+  enableLazyLoading: boolean;
+  enableObjectPooling: boolean;
+  maxMemoryUsage: number; // MB
+  targetFPS: number;
+  qualityLevel: "low" | "medium" | "high" | "ultra";
+}
+
+export interface PerformanceReport {
+  averageFPS: number;
+  averageFrameTime: number;
+  peakMemoryUsage: number;
+  averageRenderTime: number;
+  averageUpdateTime: number;
+  averageInputLatency: number;
+  droppedFrames: number;
+  performanceScore: number;
+  recommendations: string[];
+  timestamp: number;
+}
+
+// ============================================================================
+// PERFORMANCE MONITOR
+// ============================================================================
 
 export class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
-  private maxHistory: number = 100;
-  private thresholds: PerformanceThresholds;
-  private warningCallback?: (issue: string, metric: PerformanceMetrics) => void;
+  private isMonitoring: boolean = false;
   private frameCount: number = 0;
   private lastFrameTime: number = 0;
-  private fpsInterval: NodeJS.Timeout | null = null;
+  private droppedFrames: number = 0;
+  private thresholds: PerformanceThresholds;
+  private config: OptimizationConfig;
 
-  constructor(thresholds?: Partial<PerformanceThresholds>) {
-    this.thresholds = {
-      minFPS: thresholds?.minFPS ?? 30,
-      maxMemory: thresholds?.maxMemory ?? 200, // 200 MB
-      maxLoadTime: thresholds?.maxLoadTime ?? 3000, // 3 seconds
-      maxRenderTime: thresholds?.maxRenderTime ?? 16, // 60 FPS target
-      maxCPU: thresholds?.maxCPU ?? 80, // 80% CPU
-      maxNetworkLatency: thresholds?.maxNetworkLatency ?? 500, // 500ms
-    };
+  constructor() {
+    this.thresholds = this.getDefaultThresholds();
+    this.config = this.getDefaultConfig();
+    this.startMonitoring();
   }
 
   /**
-   * Start monitoring performance
+   * Start performance monitoring
    */
   startMonitoring(): void {
-    // Start FPS monitoring
-    this.startFPSMonitoring();
+    if (this.isMonitoring) return;
 
-    // Monitor memory every 5 seconds
-    setInterval(() => {
-      this.recordMetrics();
-    }, 5000);
+    this.isMonitoring = true;
+    this.frameCount = 0;
+    this.lastFrameTime = performance.now();
+    this.droppedFrames = 0;
+
+    // Start frame monitoring
+    this.monitorFrame();
+    
+    console.log("📊 Performance monitoring started");
   }
 
   /**
-   * Stop monitoring
+   * Stop performance monitoring
    */
   stopMonitoring(): void {
-    if (this.fpsInterval) {
-      clearInterval(this.fpsInterval);
-      this.fpsInterval = null;
-    }
+    this.isMonitoring = false;
+    console.log("📊 Performance monitoring stopped");
   }
 
   /**
-   * Record current metrics
+   * Record a performance metric
    */
-  recordMetrics(): void {
-    const metrics: PerformanceMetrics = {
-      fps: this.getCurrentFPS(),
-      memoryUsage: this.getMemoryUsage(),
-      loadTime: this.getLoadTime(),
-      renderTime: this.getRenderTime(),
-      cpuUsage: this.getCPUUsage(),
-      networkLatency: this.getNetworkLatency(),
-      cacheHitRate: this.getCacheHitRate(),
-      timestamp: Date.now(),
+  recordMetric(metric: Partial<PerformanceMetrics>): void {
+    if (!this.isMonitoring) return;
+
+    const fullMetric: PerformanceMetrics = {
+      fps: 0,
+      frameTime: 0,
+      memoryUsage: 0,
+      renderTime: 0,
+      updateTime: 0,
+      inputLatency: 0,
+      timestamp: performance.now(),
+      ...metric,
     };
 
-    this.metrics.push(metrics);
+    this.metrics.push(fullMetric);
 
-    // Keep only recent metrics
-    if (this.metrics.length > this.maxHistory) {
-      this.metrics.shift();
+    // Keep only last 1000 metrics
+    if (this.metrics.length > 1000) {
+      this.metrics = this.metrics.slice(-1000);
     }
 
-    // Check thresholds
-    this.checkThresholds(metrics);
+    // Check for performance issues
+    this.checkPerformanceIssues(fullMetric);
   }
 
   /**
    * Get current performance metrics
    */
-  getCurrentMetrics(): PerformanceMetrics {
-    return {
-      fps: this.getCurrentFPS(),
-      memoryUsage: this.getMemoryUsage(),
-      loadTime: this.getLoadTime(),
-      renderTime: this.getRenderTime(),
-      cpuUsage: this.getCPUUsage(),
-      networkLatency: this.getNetworkLatency(),
-      cacheHitRate: this.getCacheHitRate(),
-      timestamp: Date.now(),
-    };
+  getCurrentMetrics(): PerformanceMetrics | null {
+    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
   }
 
   /**
    * Get performance report
    */
-  getReport(): {
-    current: PerformanceMetrics;
-    average: PerformanceMetrics;
-    min: PerformanceMetrics;
-    max: PerformanceMetrics;
-    issues: string[];
-  } {
+  getPerformanceReport(): PerformanceReport {
     if (this.metrics.length === 0) {
-      const current = this.getCurrentMetrics();
+      return this.getEmptyReport();
+    }
+
+    const recentMetrics = this.metrics.slice(-100); // Last 100 frames
+    const averageFPS = this.calculateAverageFPS(recentMetrics);
+    const averageFrameTime = this.calculateAverageFrameTime(recentMetrics);
+    const peakMemoryUsage = this.calculatePeakMemoryUsage(recentMetrics);
+    const averageRenderTime = this.calculateAverageRenderTime(recentMetrics);
+    const averageUpdateTime = this.calculateAverageUpdateTime(recentMetrics);
+    const averageInputLatency = this.calculateAverageInputLatency(recentMetrics);
+    const performanceScore = this.calculatePerformanceScore(recentMetrics);
+    const recommendations = this.generateRecommendations(recentMetrics);
+
       return {
-        current,
-        average: current,
-        min: current,
-        max: current,
-        issues: [],
-      };
-    }
-
-    const current = this.getCurrentMetrics();
-    const average = this.calculateAverageMetrics();
-    const min = this.calculateMinMetrics();
-    const max = this.calculateMaxMetrics();
-    const issues = this.detectIssues(current);
-
-    return { current, average, min, max, issues };
-  }
-
-  /**
-   * Set warning callback
-   */
-  onWarning(callback: (issue: string, metric: PerformanceMetrics) => void): void {
-    this.warningCallback = callback;
-  }
-
-  /**
-   * Clear metrics history
-   */
-  clearHistory(): void {
-    this.metrics = [];
-  }
-
-  /**
-   * Export metrics
-   */
-  exportMetrics(): PerformanceMetrics[] {
-    return [...this.metrics];
-  }
-
-  /**
-   * Private methods
-   */
-
-  private startFPSMonitoring(): void {
-    this.lastFrameTime = performance.now();
-    this.frameCount = 0;
-
-    const countFrame = () => {
-      this.frameCount++;
-      requestAnimationFrame(countFrame);
-    };
-
-    requestAnimationFrame(countFrame);
-
-    // Calculate FPS every second
-    this.fpsInterval = setInterval(() => {
-      const currentTime = performance.now();
-      const delta = currentTime - this.lastFrameTime;
-      const fps = Math.round((this.frameCount * 1000) / delta);
-
-      this.frameCount = 0;
-      this.lastFrameTime = currentTime;
-    }, 1000);
-  }
-
-  private getCurrentFPS(): number {
-    if (this.lastFrameTime === 0) return 60;
-    const currentTime = performance.now();
-    const delta = currentTime - this.lastFrameTime;
-    return delta > 0 ? Math.round((this.frameCount * 1000) / delta) : 60;
-  }
-
-  private getMemoryUsage(): number {
-    if ("memory" in performance) {
-      const memory = (performance as any).memory;
-      return Math.round(memory.usedJSHeapSize / 1048576); // Convert to MB
-    }
-    return 0;
-  }
-
-  private getLoadTime(): number {
-    if (performance.timing) {
-      return performance.timing.loadEventEnd - performance.timing.navigationStart;
-    }
-    return 0;
-  }
-
-  private getRenderTime(): number {
-    // This would measure actual render time in a real implementation
-    return 0;
-  }
-
-  private getCPUUsage(): number {
-    // This would measure CPU usage in a real implementation
-    return 0;
-  }
-
-  private getNetworkLatency(): number {
-    // This would measure network latency in a real implementation
-    return 0;
-  }
-
-  private getCacheHitRate(): number {
-    // This would measure cache hit rate in a real implementation
-    return 100;
-  }
-
-  private calculateAverageMetrics(): PerformanceMetrics {
-    if (this.metrics.length === 0) return this.getCurrentMetrics();
-
-    const sum = this.metrics.reduce(
-      (acc, m) => ({
-        fps: acc.fps + m.fps,
-        memoryUsage: acc.memoryUsage + m.memoryUsage,
-        loadTime: acc.loadTime + m.loadTime,
-        renderTime: acc.renderTime + m.renderTime,
-        cpuUsage: acc.cpuUsage + m.cpuUsage,
-        networkLatency: acc.networkLatency + m.networkLatency,
-        cacheHitRate: acc.cacheHitRate + m.cacheHitRate,
-        timestamp: 0,
-      }),
-      { fps: 0, memoryUsage: 0, loadTime: 0, renderTime: 0, cpuUsage: 0, networkLatency: 0, cacheHitRate: 0, timestamp: 0 }
-    );
-
-    const count = this.metrics.length;
-    return {
-      fps: Math.round(sum.fps / count),
-      memoryUsage: Math.round(sum.memoryUsage / count),
-      loadTime: Math.round(sum.loadTime / count),
-      renderTime: Math.round(sum.renderTime / count),
-      cpuUsage: Math.round(sum.cpuUsage / count),
-      networkLatency: Math.round(sum.networkLatency / count),
-      cacheHitRate: Math.round(sum.cacheHitRate / count),
+      averageFPS,
+      averageFrameTime,
+      peakMemoryUsage,
+      averageRenderTime,
+      averageUpdateTime,
+      averageInputLatency,
+      droppedFrames: this.droppedFrames,
+      performanceScore,
+      recommendations,
       timestamp: Date.now(),
     };
   }
 
-  private calculateMinMetrics(): PerformanceMetrics {
-    if (this.metrics.length === 0) return this.getCurrentMetrics();
-
-    return this.metrics.reduce((min, m) => ({
-      fps: Math.min(min.fps, m.fps),
-      memoryUsage: Math.min(min.memoryUsage, m.memoryUsage),
-      loadTime: Math.min(min.loadTime, m.loadTime),
-      renderTime: Math.min(min.renderTime, m.renderTime),
-      cpuUsage: Math.min(min.cpuUsage, m.cpuUsage),
-      networkLatency: Math.min(min.networkLatency, m.networkLatency),
-      cacheHitRate: Math.min(min.cacheHitRate, m.cacheHitRate),
-      timestamp: 0,
-    }));
+  /**
+   * Get performance history
+   */
+  getPerformanceHistory(limit: number = 100): PerformanceMetrics[] {
+    return this.metrics.slice(-limit);
   }
 
-  private calculateMaxMetrics(): PerformanceMetrics {
-    if (this.metrics.length === 0) return this.getCurrentMetrics();
-
-    return this.metrics.reduce((max, m) => ({
-      fps: Math.max(max.fps, m.fps),
-      memoryUsage: Math.max(max.memoryUsage, m.memoryUsage),
-      loadTime: Math.max(max.loadTime, m.loadTime),
-      renderTime: Math.max(max.renderTime, m.renderTime),
-      cpuUsage: Math.max(max.cpuUsage, m.cpuUsage),
-      networkLatency: Math.max(max.networkLatency, m.networkLatency),
-      cacheHitRate: Math.max(max.cacheHitRate, m.cacheHitRate),
-      timestamp: 0,
-    }));
+  /**
+   * Clear performance data
+   */
+  clearMetrics(): void {
+    this.metrics = [];
+    this.droppedFrames = 0;
+    console.log("📊 Performance metrics cleared");
   }
 
-  private checkThresholds(metrics: PerformanceMetrics): void {
-    const issues: string[] = [];
+  // ============================================================================
+  // PRIVATE METHODS
+  // ============================================================================
 
-    if (metrics.fps < this.thresholds.minFPS) {
-      issues.push(`Low FPS: ${metrics.fps} (threshold: ${this.thresholds.minFPS})`);
+  private monitorFrame(): void {
+    if (!this.isMonitoring) return;
+
+      const currentTime = performance.now();
+    const frameTime = currentTime - this.lastFrameTime;
+    const fps = 1000 / frameTime;
+
+    // Check for dropped frames
+    if (frameTime > 16.67) { // More than 60fps threshold
+      this.droppedFrames++;
     }
 
-    if (metrics.memoryUsage > this.thresholds.maxMemory) {
-      issues.push(`High memory usage: ${metrics.memoryUsage}MB (threshold: ${this.thresholds.maxMemory}MB)`);
-    }
+    // Record frame metrics
+    this.recordMetric({
+      fps,
+      frameTime,
+      memoryUsage: this.getMemoryUsage(),
+    });
 
-    if (metrics.loadTime > this.thresholds.maxLoadTime) {
-      issues.push(`Slow load time: ${metrics.loadTime}ms (threshold: ${this.thresholds.maxLoadTime}ms)`);
-    }
+    this.lastFrameTime = currentTime;
+    this.frameCount++;
 
-    if (metrics.renderTime > this.thresholds.maxRenderTime) {
-      issues.push(`Slow render time: ${metrics.renderTime}ms (threshold: ${this.thresholds.maxRenderTime}ms)`);
-    }
-
-    if (metrics.cpuUsage > this.thresholds.maxCPU) {
-      issues.push(`High CPU usage: ${metrics.cpuUsage}% (threshold: ${this.thresholds.maxCPU}%)`);
-    }
-
-    if (metrics.networkLatency > this.thresholds.maxNetworkLatency) {
-      issues.push(`High network latency: ${metrics.networkLatency}ms (threshold: ${this.thresholds.maxNetworkLatency}ms)`);
-    }
-
-    if (issues.length > 0 && this.warningCallback) {
-      issues.forEach((issue) => this.warningCallback!(issue, metrics));
-    }
+    // Continue monitoring
+    requestAnimationFrame(() => this.monitorFrame());
   }
 
-  private detectIssues(metrics: PerformanceMetrics): string[] {
-    const issues: string[] = [];
-
-    if (metrics.fps < this.thresholds.minFPS) {
-      issues.push("Low FPS detected");
+  private getMemoryUsage(): number {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      return memory.usedJSHeapSize / (1024 * 1024); // Convert to MB
     }
-
-    if (metrics.memoryUsage > this.thresholds.maxMemory) {
-      issues.push("High memory usage detected");
-    }
-
-    if (metrics.loadTime > this.thresholds.maxLoadTime) {
-      issues.push("Slow load time detected");
-    }
-
-    return issues;
-  }
-}
-
-// ============================================================================
-// OPTIMIZATION UTILITIES
-// ============================================================================
-
-/**
- * Memoization cache for expensive calculations
- */
-export class MemoizationCache<K, V> {
-  private cache: Map<string, { value: V; timestamp: number }> = new Map();
-  private maxSize: number;
-  private ttl: number; // Time to live in milliseconds
-
-  constructor(maxSize: number = 1000, ttl: number = 60000) {
-    this.maxSize = maxSize;
-    this.ttl = ttl;
-  }
-
-  get(key: K): V | null {
-    const keyStr = JSON.stringify(key);
-    const cached = this.cache.get(keyStr);
-
-    if (!cached) return null;
-
-    // Check if expired
-    if (Date.now() - cached.timestamp > this.ttl) {
-      this.cache.delete(keyStr);
-      return null;
-    }
-
-    return cached.value;
-  }
-
-  set(key: K, value: V): void {
-    const keyStr = JSON.stringify(key);
-
-    // Evict oldest entry if cache is full
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-
-    this.cache.set(keyStr, { value, timestamp: Date.now() });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  getSize(): number {
-    return this.cache.size;
-  }
-
-  getHitRate(): number {
-    // This would track hits/misses in a real implementation
     return 0;
   }
+
+  private checkPerformanceIssues(metric: PerformanceMetrics): void {
+    const issues: string[] = [];
+
+    if (metric.fps < this.thresholds.fps.critical) {
+      issues.push(`Critical FPS drop: ${metric.fps.toFixed(1)}fps`);
+    } else if (metric.fps < this.thresholds.fps.warning) {
+      issues.push(`FPS warning: ${metric.fps.toFixed(1)}fps`);
+    }
+
+    if (metric.frameTime > this.thresholds.frameTime.critical) {
+      issues.push(`Critical frame time: ${metric.frameTime.toFixed(1)}ms`);
+    } else if (metric.frameTime > this.thresholds.frameTime.warning) {
+      issues.push(`Frame time warning: ${metric.frameTime.toFixed(1)}ms`);
+    }
+
+    if (metric.memoryUsage > this.thresholds.memoryUsage.critical) {
+      issues.push(`Critical memory usage: ${metric.memoryUsage.toFixed(1)}MB`);
+    } else if (metric.memoryUsage > this.thresholds.memoryUsage.warning) {
+      issues.push(`Memory warning: ${metric.memoryUsage.toFixed(1)}MB`);
+    }
+
+    if (issues.length > 0) {
+      console.warn("⚠️ Performance issues detected:", issues);
+    }
+  }
+
+  private calculateAverageFPS(metrics: PerformanceMetrics[]): number {
+    const fpsSum = metrics.reduce((sum, metric) => sum + metric.fps, 0);
+    return fpsSum / metrics.length;
+  }
+
+  private calculateAverageFrameTime(metrics: PerformanceMetrics[]): number {
+    const frameTimeSum = metrics.reduce((sum, metric) => sum + metric.frameTime, 0);
+    return frameTimeSum / metrics.length;
+  }
+
+  private calculatePeakMemoryUsage(metrics: PerformanceMetrics[]): number {
+    return Math.max(...metrics.map(metric => metric.memoryUsage));
+  }
+
+  private calculateAverageRenderTime(metrics: PerformanceMetrics[]): number {
+    const renderTimeSum = metrics.reduce((sum, metric) => sum + metric.renderTime, 0);
+    return renderTimeSum / metrics.length;
+  }
+
+  private calculateAverageUpdateTime(metrics: PerformanceMetrics[]): number {
+    const updateTimeSum = metrics.reduce((sum, metric) => sum + metric.updateTime, 0);
+    return updateTimeSum / metrics.length;
+  }
+
+  private calculateAverageInputLatency(metrics: PerformanceMetrics[]): number {
+    const inputLatencySum = metrics.reduce((sum, metric) => sum + metric.inputLatency, 0);
+    return inputLatencySum / metrics.length;
+  }
+
+  private calculatePerformanceScore(metrics: PerformanceMetrics[]): number {
+    const avgFPS = this.calculateAverageFPS(metrics);
+    const avgFrameTime = this.calculateAverageFrameTime(metrics);
+    const peakMemory = this.calculatePeakMemoryUsage(metrics);
+
+    // Calculate score based on FPS, frame time, and memory usage
+    let score = 100;
+
+    // FPS scoring (0-40 points)
+    if (avgFPS >= 60) score += 40;
+    else if (avgFPS >= 45) score += 30;
+    else if (avgFPS >= 30) score += 20;
+    else if (avgFPS >= 15) score += 10;
+
+    // Frame time scoring (0-30 points)
+    if (avgFrameTime <= 16.67) score += 30;
+    else if (avgFrameTime <= 33.33) score += 20;
+    else if (avgFrameTime <= 50) score += 10;
+
+    // Memory scoring (0-30 points)
+    if (peakMemory <= 50) score += 30;
+    else if (peakMemory <= 100) score += 20;
+    else if (peakMemory <= 200) score += 10;
+
+    return Math.max(0, Math.min(100, score));
+  }
+
+  private generateRecommendations(metrics: PerformanceMetrics[]): string[] {
+    const recommendations: string[] = [];
+    const avgFPS = this.calculateAverageFPS(metrics);
+    const avgFrameTime = this.calculateAverageFrameTime(metrics);
+    const peakMemory = this.calculatePeakMemoryUsage(metrics);
+
+    if (avgFPS < 30) {
+      recommendations.push("Consider reducing visual effects or lowering quality settings");
+    }
+
+    if (avgFrameTime > 33.33) {
+      recommendations.push("Optimize rendering pipeline or reduce draw calls");
+    }
+
+    if (peakMemory > 100) {
+      recommendations.push("Implement object pooling or reduce memory allocations");
+    }
+
+    if (this.droppedFrames > 10) {
+      recommendations.push("Check for performance bottlenecks in game loop");
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push("Performance is optimal");
+    }
+
+    return recommendations;
+  }
+
+  private getEmptyReport(): PerformanceReport {
+    return {
+      averageFPS: 0,
+      averageFrameTime: 0,
+      peakMemoryUsage: 0,
+      averageRenderTime: 0,
+      averageUpdateTime: 0,
+      averageInputLatency: 0,
+      droppedFrames: 0,
+      performanceScore: 0,
+      recommendations: ["No data available"],
+      timestamp: Date.now(),
+    };
+  }
+
+  private getDefaultThresholds(): PerformanceThresholds {
+    return {
+      fps: { warning: 45, critical: 30 },
+      frameTime: { warning: 22.22, critical: 33.33 },
+      memoryUsage: { warning: 100, critical: 200 },
+      renderTime: { warning: 10, critical: 20 },
+      updateTime: { warning: 5, critical: 10 },
+      inputLatency: { warning: 50, critical: 100 },
+    };
+  }
+
+  private getDefaultConfig(): OptimizationConfig {
+    return {
+      enableAdaptiveQuality: true,
+      enableMemoryManagement: true,
+      enableFrameRateLimiting: true,
+      enableLazyLoading: true,
+      enableObjectPooling: true,
+      maxMemoryUsage: 150,
+      targetFPS: 60,
+      qualityLevel: "high",
+    };
+  }
 }
 
+// ============================================================================
+// PERFORMANCE OPTIMIZER
+// ============================================================================
+
+export class PerformanceOptimizer {
+  private monitor: PerformanceMonitor;
+  private config: OptimizationConfig;
+  private optimizations: Map<string, boolean> = new Map();
+
+  constructor() {
+    this.monitor = new PerformanceMonitor();
+    this.config = this.getDefaultConfig();
+    this.initializeOptimizations();
+  }
+
+  /**
+   * Apply performance optimizations based on current metrics
+   */
+  applyOptimizations(): void {
+    const report = this.monitor.getPerformanceReport();
+    
+    if (report.performanceScore < 50) {
+      this.enableCriticalOptimizations();
+    } else if (report.performanceScore < 75) {
+      this.enableModerateOptimizations();
+    } else {
+      this.enableLightOptimizations();
+    }
+  }
+
+  /**
+   * Enable critical optimizations
+   */
+  enableCriticalOptimizations(): void {
+    this.setOptimization("reduceParticles", true);
+    this.setOptimization("disableShadows", true);
+    this.setOptimization("reduceTextureQuality", true);
+    this.setOptimization("limitFrameRate", true);
+    this.setOptimization("enableObjectPooling", true);
+    this.setOptimization("disablePostProcessing", true);
+    
+    console.log("🔧 Critical optimizations enabled");
+  }
+
+  /**
+   * Enable moderate optimizations
+   */
+  enableModerateOptimizations(): void {
+    this.setOptimization("reduceParticles", true);
+    this.setOptimization("limitFrameRate", true);
+    this.setOptimization("enableObjectPooling", true);
+    this.setOptimization("optimizeRendering", true);
+    
+    console.log("🔧 Moderate optimizations enabled");
+  }
+
+  /**
+   * Enable light optimizations
+   */
+  enableLightOptimizations(): void {
+    this.setOptimization("enableObjectPooling", true);
+    this.setOptimization("optimizeRendering", true);
+    
+    console.log("🔧 Light optimizations enabled");
+  }
+
+  /**
+   * Set a specific optimization
+   */
+  setOptimization(name: string, enabled: boolean): void {
+    this.optimizations.set(name, enabled);
+    console.log(`🔧 Optimization ${name}: ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Get optimization status
+   */
+  getOptimization(name: string): boolean {
+    return this.optimizations.get(name) || false;
+  }
+
+  /**
+   * Get all optimizations
+   */
+  getAllOptimizations(): Map<string, boolean> {
+    return new Map(this.optimizations);
+  }
+
+  /**
+   * Reset all optimizations
+   */
+  resetOptimizations(): void {
+    this.optimizations.clear();
+    this.initializeOptimizations();
+    console.log("🔧 All optimizations reset");
+  }
+
+  /**
+   * Get performance monitor
+   */
+  getMonitor(): PerformanceMonitor {
+    return this.monitor;
+  }
+
+  // ============================================================================
+  // PRIVATE METHODS
+  // ============================================================================
+
+  private initializeOptimizations(): void {
+    const defaultOptimizations = [
+      "reduceParticles",
+      "disableShadows",
+      "reduceTextureQuality",
+      "limitFrameRate",
+      "enableObjectPooling",
+      "disablePostProcessing",
+      "optimizeRendering",
+      "enableLazyLoading",
+      "enableMemoryManagement",
+    ];
+
+    for (const optimization of defaultOptimizations) {
+      this.optimizations.set(optimization, false);
+    }
+  }
+
+  private getDefaultConfig(): OptimizationConfig {
+    return {
+      enableAdaptiveQuality: true,
+      enableMemoryManagement: true,
+      enableFrameRateLimiting: true,
+      enableLazyLoading: true,
+      enableObjectPooling: true,
+      maxMemoryUsage: 150,
+      targetFPS: 60,
+      qualityLevel: "high",
+    };
+  }
+}
+
+// ============================================================================
+// PERFORMANCE UTILITIES
+// ============================================================================
+
 /**
- * Debounce function execution
+ * Debounce function for performance optimization
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
 /**
- * Throttle function execution
+ * Throttle function for performance optimization
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean = false;
-
-  return function executedFunction(...args: Parameters<T>) {
+  let inThrottle: boolean;
+  return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
@@ -441,177 +545,108 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
- * Batch updates for performance
+ * Object pool for performance optimization
  */
-export class BatchProcessor<T> {
-  private queue: T[] = [];
-  private batchSize: number;
-  private batchDelay: number;
-  private processor: (batch: T[]) => void;
-  private timer: NodeJS.Timeout | null = null;
+export class ObjectPool<T> {
+  private pool: T[] = [];
+  private createFn: () => T;
+  private resetFn: (obj: T) => void;
 
-  constructor(processor: (batch: T[]) => void, batchSize: number = 50, batchDelay: number = 100) {
-    this.processor = processor;
-    this.batchSize = batchSize;
-    this.batchDelay = batchDelay;
-  }
-
-  add(item: T): void {
-    this.queue.push(item);
-
-    if (this.queue.length >= this.batchSize) {
-      this.flush();
-    } else {
-      this.scheduleFlush();
+  constructor(createFn: () => T, resetFn: (obj: T) => void, initialSize: number = 10) {
+    this.createFn = createFn;
+    this.resetFn = resetFn;
+    
+    // Pre-populate pool
+    for (let i = 0; i < initialSize; i++) {
+      this.pool.push(this.createFn());
     }
   }
 
-  flush(): void {
-    if (this.timer) {
-      clearTimeout(this.timer);
-      this.timer = null;
+  get(): T {
+    if (this.pool.length > 0) {
+      return this.pool.pop()!;
     }
-
-    if (this.queue.length > 0) {
-      const batch = this.queue.splice(0, this.queue.length);
-      this.processor(batch);
-    }
+    return this.createFn();
   }
 
-  private scheduleFlush(): void {
-    if (this.timer) return;
-
-    this.timer = setTimeout(() => {
-      this.flush();
-    }, this.batchDelay);
-  }
-}
-
-/**
- * Optimize board rendering
- */
-export function optimizeBoardRender(board: CellState[][]): {
-  visibleCells: Set<string>;
-  batchUpdates: CellState[][];
-} {
-  const visibleCells = new Set<string>();
-  const batchUpdates: CellState[][] = [];
-
-  // Only render visible cells (for large boards)
-  // This would integrate with viewport calculations
-
-  for (let y = 0; y < board.length; y++) {
-    for (let x = 0; x < board[y].length; x++) {
-      visibleCells.add(`${x},${y}`);
-    }
+  release(obj: T): void {
+    this.resetFn(obj);
+    this.pool.push(obj);
   }
 
-  return { visibleCells, batchUpdates };
-}
-
-/**
- * Lazy load game assets
- */
-export class AssetLoader {
-  private loadedAssets: Map<string, any> = new Map();
-  private loadingPromises: Map<string, Promise<any>> = new Map();
-
-  async load(assetId: string, loader: () => Promise<any>): Promise<any> {
-    // Return cached asset
-    if (this.loadedAssets.has(assetId)) {
-      return this.loadedAssets.get(assetId);
-    }
-
-    // Return in-progress loading promise
-    if (this.loadingPromises.has(assetId)) {
-      return this.loadingPromises.get(assetId);
-    }
-
-    // Start loading
-    const loadingPromise = loader().then((asset) => {
-      this.loadedAssets.set(assetId, asset);
-      this.loadingPromises.delete(assetId);
-      return asset;
-    });
-
-    this.loadingPromises.set(assetId, loadingPromise);
-    return loadingPromise;
-  }
-
-  preload(assetIds: string[], loaders: Map<string, () => Promise<any>>): Promise<void[]> {
-    const promises = assetIds.map((assetId) => {
-      const loader = loaders.get(assetId);
-      if (!loader) {
-        console.warn(`No loader found for asset: ${assetId}`);
-        return Promise.resolve();
-      }
-      return this.load(assetId, loader);
-    });
-
-    return Promise.all(promises);
-  }
-
-  unload(assetId: string): void {
-    this.loadedAssets.delete(assetId);
-    this.loadingPromises.delete(assetId);
+  size(): number {
+    return this.pool.length;
   }
 
   clear(): void {
-    this.loadedAssets.clear();
-    this.loadingPromises.clear();
+    this.pool = [];
   }
 }
 
 /**
- * Virtual scrolling for large boards
+ * Memory manager for performance optimization
  */
-export interface VirtualScrollConfig {
-  containerHeight: number;
-  containerWidth: number;
-  itemHeight: number;
-  itemWidth: number;
-  overscan: number; // Number of extra items to render
+export class MemoryManager {
+  private allocations: Map<string, number> = new Map();
+  private maxMemory: number;
+
+  constructor(maxMemory: number = 100) {
+    this.maxMemory = maxMemory;
+  }
+
+  allocate(id: string, size: number): boolean {
+    const currentUsage = this.getCurrentUsage();
+    if (currentUsage + size > this.maxMemory) {
+      console.warn(`Memory allocation failed: ${id} (${size}MB)`);
+      return false;
+    }
+
+    this.allocations.set(id, size);
+    return true;
+  }
+
+  deallocate(id: string): void {
+    this.allocations.delete(id);
+  }
+
+  getCurrentUsage(): number {
+    return Array.from(this.allocations.values()).reduce((sum, size) => sum + size, 0);
+  }
+
+  getMaxMemory(): number {
+    return this.maxMemory;
+  }
+
+  setMaxMemory(maxMemory: number): void {
+    this.maxMemory = maxMemory;
+  }
+
+  clear(): void {
+    this.allocations.clear();
+  }
 }
 
-export function calculateVirtualScroll(config: VirtualScrollConfig, scrollTop: number, scrollLeft: number): {
-  startRow: number;
-  endRow: number;
-  startCol: number;
-  endCol: number;
-  totalRows: number;
-  totalCols: number;
-} {
-  const { containerHeight, containerWidth, itemHeight, itemWidth, overscan } = config;
+// ============================================================================
+// PERFORMANCE HOOKS
+// ============================================================================
 
-  const startRow = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  const endRow = Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan;
-
-  const startCol = Math.max(0, Math.floor(scrollLeft / itemWidth) - overscan);
-  const endCol = Math.ceil((scrollLeft + containerWidth) / itemWidth) + overscan;
+/**
+ * React hook for performance optimization
+ */
+export function usePerformanceOptimization() {
+  const optimizer = new PerformanceOptimizer();
 
   return {
-    startRow,
-    endRow,
-    startCol,
-    endCol,
-    totalRows: endRow - startRow,
-    totalCols: endCol - startCol,
+    applyOptimizations: optimizer.applyOptimizations.bind(optimizer),
+    setOptimization: optimizer.setOptimization.bind(optimizer),
+    getOptimization: optimizer.getOptimization.bind(optimizer),
+    getAllOptimizations: optimizer.getAllOptimizations.bind(optimizer),
+    resetOptimizations: optimizer.resetOptimizations.bind(optimizer),
+    getMonitor: optimizer.getMonitor.bind(optimizer),
   };
 }
 
-// ============================================================================
-// SINGLETON INSTANCES
-// ============================================================================
-
-let performanceMonitorInstance: PerformanceMonitor | null = null;
-
-export function getPerformanceMonitor(): PerformanceMonitor {
-  if (!performanceMonitorInstance) {
-    performanceMonitorInstance = new PerformanceMonitor();
-  }
-  return performanceMonitorInstance;
-}
-
-export function createPerformanceMonitor(thresholds?: Partial<PerformanceThresholds>): PerformanceMonitor {
-  return new PerformanceMonitor(thresholds);
-}
+// Singleton instances
+export const performanceMonitor = new PerformanceMonitor();
+export const performanceOptimizer = new PerformanceOptimizer();
+export const memoryManager = new MemoryManager();

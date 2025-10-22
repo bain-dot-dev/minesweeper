@@ -1,6 +1,7 @@
 /**
  * Game Mode Selector Component
- * Mission Impossible themed UI for selecting game modes
+ * Mobile-first Mission Impossible themed UI for selecting game modes
+ * Optimized for mini apps with no scrolling
  */
 
 "use client";
@@ -28,23 +29,23 @@ interface Category {
   id: GameModeCategory | "all";
   name: string;
   icon: string;
+  shortName: string;
 }
 
 const CATEGORIES: Category[] = [
-  { id: "all", name: "All Missions", icon: "🎮" },
-  { id: "time-based", name: "Time Ops", icon: "⏱️" },
-  { id: "difficulty", name: "Progressive", icon: "📈" },
-  { id: "relaxed", name: "Training", icon: "🎯" },
-  { id: "challenge", name: "Elite", icon: "💀" },
-  { id: "creative", name: "Special", icon: "🎨" },
+  { id: "all", name: "All Missions", shortName: "All", icon: "🎮" },
+  { id: "time-based", name: "Time Ops", shortName: "Time", icon: "⏱️" },
+  { id: "difficulty", name: "Progressive", shortName: "Prog", icon: "📈" },
+  { id: "relaxed", name: "Training", shortName: "Train", icon: "🎯" },
+  { id: "challenge", name: "Elite", shortName: "Elite", icon: "💀" },
+  { id: "creative", name: "Special", shortName: "Special", icon: "🎨" },
 ];
 
 export function GameModeSelector({
   onSelectMode,
   currentMode,
   className,
-  showPreview = true,
-  compact = false,
+  showPreview = false, // Disabled by default for mobile
   onClose,
 }: GameModeSelectorProps) {
   const [selectedCategory, setSelectedCategory] = useState<
@@ -87,116 +88,115 @@ export function GameModeSelector({
 
   return (
     <div
-      className={cn("w-full max-w-7xl mx-auto px-4 py-8 space-y-6", className)}
+      className={cn(
+        "w-full h-full flex flex-col overflow-hidden",
+        "bg-gradient-to-b from-mi-dark-blue to-black",
+        className
+      )}
     >
-      {/* Header */}
-      <div className="text-center space-y-2 relative">
-        <h1 className="text-4xl md:text-5xl font-bold text-mi-cyber-green uppercase tracking-wider">
-          Select Your Mission
-        </h1>
-        <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-mi-electric-blue to-transparent" />
-        <p className="text-gray-400 text-sm md:text-base">
-          Choose your operation mode and begin your mission
-        </p>
+      {/* Compact Header */}
+      <div className="flex-shrink-0 px-3 py-2 border-b border-mi-cyber-green/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold text-mi-cyber-green uppercase tracking-wide">
+              Select Mission
+            </h1>
+            <div className="text-xs text-gray-400">
+              {filteredModes.length} available
+            </div>
+          </div>
 
-        {/* Close Button */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-0 right-0 text-gray-400 hover:text-white transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Close Button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-1"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        )}
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="max-w-md mx-auto">
+      {/* Search Bar - Compact */}
+      <div className="flex-shrink-0 px-3 py-2">
         <input
           type="text"
-          placeholder="Search missions..."
+          placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 bg-mi-dark-blue/50 border border-mi-cyber-green/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-mi-cyber-green focus:ring-2 focus:ring-mi-cyber-green/20 transition-all"
+          className="w-full px-3 py-2 bg-mi-dark-blue/50 border border-mi-cyber-green/30 rounded text-white placeholder-gray-500 focus:outline-none focus:border-mi-cyber-green text-sm"
         />
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        {CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className={cn(
-              "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2",
-              selectedCategory === category.id
-                ? "bg-mi-cyber-green text-black shadow-lg shadow-mi-cyber-green/50 scale-105"
-                : "bg-mi-dark-blue/50 text-gray-300 hover:bg-mi-dark-blue hover:text-white border border-mi-cyber-green/20"
-            )}
-          >
-            <span className="text-lg">{category.icon}</span>
-            <span className="text-sm md:text-base">{category.name}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Mode Count */}
-      <div className="text-center text-sm text-gray-400">
-        {filteredModes.length}{" "}
-        {filteredModes.length === 1 ? "mission" : "missions"} available
-      </div>
-
-      {/* Modes Grid */}
-      <div
-        className={cn(
-          "grid gap-4",
-          compact
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        )}
-      >
-        {filteredModes.map((mode) => (
-          <ModeCard
-            key={mode.id}
-            mode={mode}
-            onSelect={() => handleModeSelect(mode)}
-            onHover={() => setHoveredMode(mode.id)}
-            onLeave={() => setHoveredMode(null)}
-            isSelected={currentMode === mode.id}
-            isHovered={hoveredMode === mode.id}
-            compact={compact}
-          />
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {filteredModes.length === 0 && (
-        <div className="text-center py-12 space-y-4">
-          <div className="text-6xl opacity-50">🔍</div>
-          <h3 className="text-xl font-semibold text-gray-400">
-            No missions found
-          </h3>
-          <p className="text-gray-500">
-            Try adjusting your search or category filter
-          </p>
+      {/* Category Tabs - Horizontal Scroll */}
+      <div className="flex-shrink-0 px-3 py-2">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          {CATEGORIES.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={cn(
+                "flex-shrink-0 px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 flex items-center gap-1.5",
+                selectedCategory === category.id
+                  ? "bg-mi-cyber-green text-black shadow-lg"
+                  : "bg-mi-dark-blue/50 text-gray-300 hover:bg-mi-dark-blue hover:text-white border border-mi-cyber-green/20"
+              )}
+            >
+              <span className="text-sm">{category.icon}</span>
+              <span className="hidden sm:inline">{category.name}</span>
+              <span className="sm:hidden">{category.shortName}</span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Mode Preview (Desktop) */}
+      {/* Modes Grid - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          {filteredModes.map((mode) => (
+            <ModeCard
+              key={mode.id}
+              mode={mode}
+              onSelect={() => handleModeSelect(mode)}
+              onHover={() => setHoveredMode(mode.id)}
+              onLeave={() => setHoveredMode(null)}
+              isSelected={currentMode === mode.id}
+              isHovered={hoveredMode === mode.id}
+              compact={true}
+            />
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredModes.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 space-y-3">
+            <div className="text-4xl opacity-50">🔍</div>
+            <h3 className="text-lg font-semibold text-gray-400">
+              No missions found
+            </h3>
+            <p className="text-sm text-gray-500 text-center">
+              Try adjusting your search or category filter
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Mode Preview (Mobile Bottom Sheet) */}
       {showPreview && hoveredModeData && (
-        <div className="hidden lg:block">
+        <div className="lg:hidden">
           <ModePreview mode={hoveredModeData} />
         </div>
       )}

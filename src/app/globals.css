@@ -671,3 +671,13 @@ body {
 .to-mi-dark-blue\/90 {
   --tw-gradient-to: rgba(15, 23, 42, 0.9);
 }
+
+/* Scrollbar utilities for mobile optimization */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}

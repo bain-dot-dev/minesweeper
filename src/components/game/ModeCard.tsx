@@ -51,20 +51,20 @@ export function ModeCard({
       {/* Card Container */}
       <div
         className={cn(
-          "relative bg-gradient-to-br from-mi-dark-blue to-mi-dark-blue/50 border-2 rounded-xl overflow-hidden transition-all duration-300",
+          "relative bg-gradient-to-br from-mi-dark-blue to-mi-dark-blue/50 border-2 rounded-lg overflow-hidden transition-all duration-300",
           isSelected
             ? "border-mi-cyber-green shadow-lg shadow-mi-cyber-green/50"
             : "border-mi-cyber-green/30 hover:border-mi-cyber-green/60",
           "h-full",
-          compact ? "min-h-[180px]" : "min-h-[220px]"
+          compact ? "min-h-[120px]" : "min-h-[180px]"
         )}
       >
         {/* Selected Indicator */}
         {isSelected && (
-          <div className="absolute top-2 right-2 z-20">
-            <div className="bg-mi-cyber-green text-black px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+          <div className="absolute top-1 right-1 z-20">
+            <div className="bg-mi-cyber-green text-black px-1.5 py-0.5 rounded text-xs font-bold flex items-center gap-1">
               <span>✓</span>
-              <span>ACTIVE</span>
+              <span className="hidden sm:inline">ACTIVE</span>
             </div>
           </div>
         )}
@@ -72,7 +72,7 @@ export function ModeCard({
         {/* Category Gradient Bar */}
         <div
           className={cn(
-            "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r",
+            "absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r",
             categoryGradient
           )}
         />
@@ -80,37 +80,34 @@ export function ModeCard({
         {/* Content */}
         <div
           className={cn(
-            "space-y-3 h-full flex flex-col",
-            compact ? "p-3" : "p-4"
+            "space-y-2 h-full flex flex-col",
+            compact ? "p-2" : "p-3"
           )}
         >
           {/* Icon and Title */}
-          <div className="space-y-2">
-            <div className={cn(compact ? "text-3xl" : "text-4xl")}>
+          <div className="space-y-1">
+            <div className={cn(compact ? "text-2xl" : "text-3xl")}>
               {mode.icon}
             </div>
             <h3
               className={cn(
                 "font-bold text-white leading-tight",
-                compact ? "text-base" : "text-lg"
+                compact ? "text-sm" : "text-base"
               )}
             >
               {mode.name}
             </h3>
           </div>
 
-          {/* Description */}
-          <p
-            className={cn(
-              "text-gray-400 flex-grow",
-              compact ? "text-xs line-clamp-1" : "text-sm line-clamp-2"
-            )}
-          >
-            {mode.description}
-          </p>
+          {/* Description - Only show on larger screens or when not compact */}
+          {!compact && (
+            <p className={cn("text-gray-400 flex-grow text-xs line-clamp-2")}>
+              {mode.description}
+            </p>
+          )}
 
-          {/* Stats */}
-          <div className="space-y-2 pt-2 border-t border-mi-cyber-green/20">
+          {/* Stats - Compact version */}
+          <div className="space-y-1 pt-1 border-t border-mi-cyber-green/20">
             {/* Category Badge */}
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 uppercase tracking-wider">
@@ -123,26 +120,26 @@ export function ModeCard({
               )}
             </div>
 
-            {/* Quick Info */}
+            {/* Quick Info - More compact */}
             <div className="flex flex-wrap gap-1 text-xs">
               {typeof mode.config.boardSize !== "string" && (
-                <span className="px-2 py-1 bg-mi-dark-blue/80 rounded text-gray-300">
+                <span className="px-1.5 py-0.5 bg-mi-dark-blue/80 rounded text-gray-300 text-xs">
                   {mode.config.boardSize.width}x{mode.config.boardSize.height}
                 </span>
               )}
               {typeof mode.config.mineCount === "number" && (
-                <span className="px-2 py-1 bg-mi-dark-blue/80 rounded text-gray-300">
+                <span className="px-1.5 py-0.5 bg-mi-dark-blue/80 rounded text-gray-300 text-xs">
                   💣 {mode.config.mineCount}
                 </span>
               )}
               {mode.config.timeLimit && (
-                <span className="px-2 py-1 bg-mi-dark-blue/80 rounded text-gray-300">
+                <span className="px-1.5 py-0.5 bg-mi-dark-blue/80 rounded text-gray-300 text-xs">
                   ⏱️ {mode.config.timeLimit}s
                 </span>
               )}
               {mode.config.moveLimit && (
-                <span className="px-2 py-1 bg-mi-dark-blue/80 rounded text-gray-300">
-                  🎯 {mode.config.moveLimit} moves
+                <span className="px-1.5 py-0.5 bg-mi-dark-blue/80 rounded text-gray-300 text-xs">
+                  🎯 {mode.config.moveLimit}
                 </span>
               )}
             </div>
@@ -162,10 +159,10 @@ export function ModeCard({
         )}
       </div>
 
-      {/* Continue Badge (if not allowed) */}
+      {/* Continue Badge (if not allowed) - More compact */}
       {!mode.continueAllowed && (
-        <div className="absolute -top-2 -right-2 z-20">
-          <div className="bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg transform rotate-12">
+        <div className="absolute -top-1 -right-1 z-20">
+          <div className="bg-red-600 text-white px-1.5 py-0.5 rounded text-xs font-bold shadow-lg transform rotate-12">
             NO CONTINUES
           </div>
         </div>

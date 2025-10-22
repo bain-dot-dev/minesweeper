@@ -51,6 +51,15 @@ export function MinesweeperGame() {
       unlocked: audioManager.isAudioUnlocked(),
       isWorldCoinApp: audioManager.isWorldCoinAppEnvironment(),
     });
+
+    // Test audio immediately
+    const testAudio = () => {
+      console.log("🔊 Testing audio immediately...");
+      audioManager.playSound("menu_click", { volume: 0.5 });
+    };
+
+    // Test after a short delay
+    setTimeout(testAudio, 1000);
   }, [audioManager]);
 
   // Audio hooks
@@ -76,13 +85,28 @@ export function MinesweeperGame() {
     return gameState.config.mines - gameState.flagCount;
   }, [gameState.config.mines, gameState.flagCount]);
 
-  // Check if this is the first visit and show start modal
+  // Check if this is the first visit or if audio is not unlocked and show start modal
   useEffect(() => {
-    const hasSeenBefore = localStorage.getItem("minesweeper-game-start-seen");
-    if (!hasSeenBefore) {
-      setShowStartModal(true);
-    }
-  }, []);
+    const checkModalVisibility = () => {
+      const hasSeenBefore = localStorage.getItem("minesweeper-game-start-seen");
+      const isAudioUnlocked = audioManager.isAudioUnlocked();
+
+      // Show modal if first visit OR if audio is not unlocked
+      if (!hasSeenBefore || !isAudioUnlocked) {
+        setShowStartModal(true);
+      } else {
+        setShowStartModal(false);
+      }
+    };
+
+    // Check immediately
+    checkModalVisibility();
+
+    // Check periodically to handle audio unlock/lock changes
+    const interval = setInterval(checkModalVisibility, 1000);
+
+    return () => clearInterval(interval);
+  }, [audioManager]);
 
   // Play menu music after first interaction (prevents blocking)
   useEffect(() => {
@@ -185,7 +209,7 @@ export function MinesweeperGame() {
   const handleStartGame = () => {
     console.log("🚀 Game started");
     setShowStartModal(false);
-    // Start gameplay music when game begins
+    // Start gameplay music when game begins (audio should be unlocked by now)
     startGameplayMusic();
   };
 
@@ -225,6 +249,44 @@ export function MinesweeperGame() {
 
       {/* Audio Debug Panel */}
       <AudioDebugPanel />
+
+      {/* Manual Audio Test Buttons */}
+      <div className="fixed bottom-4 left-4 z-50 space-y-2">
+        <button
+          onClick={() => {
+            console.log("🔊 Manual audio test clicked");
+            audioManager.playSound("menu_click", { volume: 0.7 });
+          }}
+          className="block px-4 py-2 bg-mi-cyber-green text-black font-bold rounded-lg hover:bg-mi-electric-blue transition-colors"
+        >
+          Test Audio
+        </button>
+
+        <button
+          onClick={() => {
+            console.log("🔊 Direct audio test");
+            const audio = new Audio("/audio/sfx/ui/click_tactical.mp3");
+            audio.volume = 0.7;
+            audio.addEventListener("error", (e) => {
+              console.error("❌ Direct audio error:", e);
+            });
+            audio.addEventListener("canplay", () => {
+              console.log("✅ Direct audio can play");
+            });
+            audio
+              .play()
+              .then(() => {
+                console.log("✅ Direct audio played");
+              })
+              .catch((error) => {
+                console.error("❌ Direct audio play failed:", error);
+              });
+          }}
+          className="block px-4 py-2 bg-mi-orange text-black font-bold rounded-lg hover:bg-mi-yellow transition-colors"
+        >
+          Direct Test
+        </button>
+      </div>
 
       {/* Game Header */}
       <GameHeader

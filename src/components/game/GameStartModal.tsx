@@ -6,8 +6,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { WarningTriangle, Play } from "iconoir-react";
+import { WarningTriangle, Play, SoundHigh, SoundOff } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { getAudioManager } from "@/lib/audio/AudioManager";
 
 interface GameStartModalProps {
   isVisible: boolean;
@@ -22,12 +23,29 @@ export function GameStartModal({
 }: GameStartModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [hasSeenModal, setHasSeenModal] = useState(true);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [audioManager] = useState(() => getAudioManager());
 
   useEffect(() => {
     // Check if user has seen the modal before
     const hasSeenBefore = localStorage.getItem("minesweeper-game-start-seen");
     setHasSeenModal(!!hasSeenBefore);
-  }, []);
+
+    // Check audio unlock status
+    const checkAudioStatus = () => {
+      const isUnlocked = audioManager.isAudioUnlocked();
+      setAudioUnlocked(isUnlocked);
+    };
+
+    // Check immediately
+    checkAudioStatus();
+
+    // Check periodically
+    const interval = setInterval(checkAudioStatus, 1000);
+
+    return () => clearInterval(interval);
+  }, [audioManager]);
 
   useEffect(() => {
     if (isVisible) {
@@ -37,10 +55,36 @@ export function GameStartModal({
     }
   }, [isVisible]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     // Mark as seen when user starts the game
     localStorage.setItem("minesweeper-game-start-seen", "true");
-    onStart();
+
+    // If audio is not unlocked, unlock it first
+    if (!audioUnlocked) {
+      setIsUnlocking(true);
+      try {
+        console.log("🔓 Unlocking audio before starting game...");
+        await audioManager.forceUnlock();
+
+        // Wait a moment and check if it worked
+        setTimeout(() => {
+          if (audioManager.isAudioUnlocked()) {
+            console.log("✅ Audio unlocked successfully");
+            setAudioUnlocked(true);
+          } else {
+            console.warn("⚠️ Audio unlock may have failed");
+          }
+          setIsUnlocking(false);
+          onStart();
+        }, 500);
+      } catch (error) {
+        console.error("❌ Audio unlock failed:", error);
+        setIsUnlocking(false);
+        onStart(); // Start game anyway
+      }
+    } else {
+      onStart();
+    }
   };
 
   const handleDismiss = () => {
@@ -49,7 +93,21 @@ export function GameStartModal({
     onDismiss();
   };
 
-  if (!isVisible || hasSeenModal) return null;
+  const handleTestSound = () => {
+    try {
+      console.log("🔊 Testing audio...");
+      audioManager.playSound("menu_click", { volume: 0.3 });
+    } catch (error) {
+      console.warn("⚠️ Test sound failed:", error);
+    }
+  };
+
+  // Show modal if visible and either hasn't been seen before OR audio is not unlocked
+  // This ensures the modal shows on every reload when audio is not unlocked
+  if (!isVisible) return null;
+
+  // Don't show if user has seen it AND audio is unlocked
+  if (hasSeenModal && audioUnlocked) return null;
 
   return (
     <>
@@ -142,10 +200,31 @@ export function GameStartModal({
               </ul>
             </div>
 
-            <div className="bg-mi-black/30 border border-mi-cyan/30 rounded-lg p-3">
-              <p className="text-xs text-mi-cyan italic text-center">
-                <span className="font-bold">Tip:</span> Audio is required for
-                mobile browsers and embedded apps like World Coin
+            {/* Audio Status */}
+            <div className="bg-mi-black/30 border border-mi-cyan/30 rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {audioUnlocked ? (
+                    <SoundHigh className="w-4 h-4 text-mi-cyber-green" />
+                  ) : (
+                    <SoundOff className="w-4 h-4 text-mi-red" />
+                  )}
+                  <span className="text-sm font-medium text-white">
+                    Audio Status: {audioUnlocked ? "Enabled" : "Disabled"}
+                  </span>
+                </div>
+                {!audioUnlocked && (
+                  <button
+                    onClick={handleTestSound}
+                    className="px-2 py-1 text-xs bg-mi-cyan/20 text-mi-cyan border border-mi-cyan/30 rounded hover:bg-mi-cyan/30 transition-colors"
+                  >
+                    Test
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-mi-cyan italic">
+                <span className="font-bold">Note:</span> Audio will be
+                automatically enabled when you start the mission
               </p>
             </div>
           </div>
@@ -154,17 +233,32 @@ export function GameStartModal({
           <div className="flex gap-3">
             <button
               onClick={handleStart}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-mi-cyber-green/20 to-mi-black/80 border border-mi-cyber-green/50 rounded-lg hover:border-mi-cyber-green hover:bg-mi-cyber-green/10 transition-all text-sm font-medium text-white"
+              disabled={isUnlocking}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium text-white",
+                "bg-gradient-to-r from-mi-cyber-green/20 to-mi-black/80 border border-mi-cyber-green/50",
+                "hover:border-mi-cyber-green hover:bg-mi-cyber-green/10",
+                isUnlocking && "opacity-50 cursor-not-allowed"
+              )}
             >
-              <Play className="w-4 h-4" />
-              Start Mission
+              {isUnlocking ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Enabling Audio...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Start Mission
+                </>
+              )}
             </button>
-            <button
+            {/* <button
               onClick={handleDismiss}
               className="px-4 py-3 bg-gradient-to-r from-mi-red/20 to-mi-black/80 border border-mi-red/30 rounded-lg hover:border-mi-red hover:bg-mi-red/10 transition-all text-sm font-medium text-white"
             >
               Skip
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

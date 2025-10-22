@@ -294,6 +294,12 @@ export class AudioManager implements IAudioManager {
     // Add multiple event listeners for better compatibility
     this.addUnlockListeners(unlock);
 
+    // For mobile browsers, show unlock prompt immediately
+    if (!this.isWorldCoinApp) {
+      console.log("📱 Mobile browser detected, showing unlock prompt");
+      this.showAudioUnlockGuidance();
+    }
+
     // For World Coin app, be more aggressive with unlock attempts
     const delay = this.isWorldCoinApp ? 50 : 100;
     setTimeout(() => {
@@ -596,6 +602,8 @@ export class AudioManager implements IAudioManager {
     path: string
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      console.log(`📦 Loading sound: ${eventType} from ${path}`);
+
       // Smaller pool for better performance
       const poolSize = 2;
       const pool = new AudioPool(path, poolSize);
@@ -609,6 +617,7 @@ export class AudioManager implements IAudioManager {
       testAudio.addEventListener(
         "canplaythrough",
         () => {
+          console.log(`✅ Sound loaded successfully: ${eventType}`);
           resolve();
         },
         { once: true }
@@ -616,8 +625,10 @@ export class AudioManager implements IAudioManager {
       testAudio.addEventListener(
         "error",
         (e) => {
-          // Silently fail if file doesn't exist - expected during development
-          // console.warn(`Failed to load sound: ${eventType}`, e);
+          console.error(
+            `❌ Failed to load sound: ${eventType} from ${path}`,
+            e
+          );
           reject(e);
         },
         { once: true }
@@ -717,6 +728,12 @@ export class AudioManager implements IAudioManager {
     // If audio is not unlocked, try to unlock it
     if (!this.unlocked) {
       console.log("🔓 Audio not unlocked, attempting unlock for sound:", event);
+
+      // Show unlock prompt for mobile browsers
+      if (!this.isWorldCoinApp) {
+        this.showAudioUnlockGuidance();
+      }
+
       this.setupMobileUnlock();
 
       // For World Coin app, try immediate unlock
@@ -749,11 +766,18 @@ export class AudioManager implements IAudioManager {
     }
 
     const pool = this.soundPools.get(event);
+    console.log(
+      `🔍 Looking for sound pool for ${event}:`,
+      pool ? "Found" : "Not found"
+    );
 
     // If not loaded, try to play immediately with Audio element
     if (!pool) {
       const path = getAudioPath(event);
+      console.log(`🔍 Audio path for ${event}:`, path);
+
       if (path) {
+        console.log(`🎵 Playing sound directly: ${event} from ${path}`);
         // Play immediately without waiting for pool
         const quickAudio = new Audio(path);
         const defaultConfig = DEFAULT_AUDIO_CONFIGS[event]?.defaultConfig;
@@ -762,7 +786,24 @@ export class AudioManager implements IAudioManager {
           (this.settings.soundEffectsVolume / 100) *
           (this.settings.masterVolume / 100);
 
+        console.log(`🔊 Final volume for ${event}:`, finalVolume);
         quickAudio.volume = finalVolume;
+
+        // Add error handling for all cases
+        quickAudio.addEventListener("error", (e) => {
+          console.error(`❌ Audio error for ${event}:`, e);
+          console.error(`❌ Audio src:`, quickAudio.src);
+          console.error(`❌ Audio readyState:`, quickAudio.readyState);
+          console.error(`❌ Audio networkState:`, quickAudio.networkState);
+        });
+
+        quickAudio.addEventListener("loadstart", () => {
+          console.log(`📡 Started loading: ${event}`);
+        });
+
+        quickAudio.addEventListener("canplay", () => {
+          console.log(`🎵 Can play: ${event}`);
+        });
 
         // For World Coin app, add additional error handling
         if (this.isWorldCoinApp) {
@@ -779,6 +820,8 @@ export class AudioManager implements IAudioManager {
           })
           .catch((error) => {
             console.warn("⚠️ Sound playback failed:", event, error);
+            console.warn("⚠️ Audio src:", quickAudio.src);
+            console.warn("⚠️ Audio readyState:", quickAudio.readyState);
             // Try to unlock audio if it fails
             if (!this.unlocked) {
               this.setupMobileUnlock();
@@ -789,10 +832,12 @@ export class AudioManager implements IAudioManager {
           });
 
         // Load into pool for next time (background)
-        this.loadSound(event, path).catch(() => {
-          // Silently fail
+        this.loadSound(event, path).catch((error) => {
+          console.error(`❌ Failed to load sound into pool: ${event}`, error);
         });
         return;
+      } else {
+        console.warn(`⚠️ No audio path found for event: ${event}`);
       }
     }
 

@@ -366,8 +366,8 @@ export class SpecialEventsManager {
         if (feature.id === "bonus_points" && feature.config.multiplier) {
           // Modify scoring system
           const modifiedScoring = { ...gameMode.scoring };
-          if (modifiedScoring.basePoints) {
-            modifiedScoring.basePoints = (points: number) => points * feature.config.multiplier;
+          if (modifiedScoring.basePoints && typeof feature.config.multiplier === 'number') {
+            modifiedScoring.basePoints = modifiedScoring.basePoints * feature.config.multiplier;
           }
           return { ...gameMode, scoring: modifiedScoring };
         }

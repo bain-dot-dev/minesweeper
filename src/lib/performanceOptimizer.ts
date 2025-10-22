@@ -217,27 +217,32 @@ export class PerformanceMonitor {
 
   private checkPerformanceIssues(metric: PerformanceMetrics): void {
     const issues: string[] = [];
+    const criticalIssues: string[] = [];
 
     if (metric.fps < this.thresholds.fps.critical) {
-      issues.push(`Critical FPS drop: ${metric.fps.toFixed(1)}fps`);
+      criticalIssues.push(`Critical FPS drop: ${metric.fps.toFixed(1)}fps`);
     } else if (metric.fps < this.thresholds.fps.warning) {
       issues.push(`FPS warning: ${metric.fps.toFixed(1)}fps`);
     }
 
     if (metric.frameTime > this.thresholds.frameTime.critical) {
-      issues.push(`Critical frame time: ${metric.frameTime.toFixed(1)}ms`);
+      criticalIssues.push(`Critical frame time: ${metric.frameTime.toFixed(1)}ms`);
     } else if (metric.frameTime > this.thresholds.frameTime.warning) {
       issues.push(`Frame time warning: ${metric.frameTime.toFixed(1)}ms`);
     }
 
     if (metric.memoryUsage > this.thresholds.memoryUsage.critical) {
-      issues.push(`Critical memory usage: ${metric.memoryUsage.toFixed(1)}MB`);
+      criticalIssues.push(`Critical memory usage: ${metric.memoryUsage.toFixed(1)}MB`);
     } else if (metric.memoryUsage > this.thresholds.memoryUsage.warning) {
       issues.push(`Memory warning: ${metric.memoryUsage.toFixed(1)}MB`);
     }
 
-    if (issues.length > 0) {
-      console.warn("⚠️ Performance issues detected:", issues);
+    // Only log critical issues to reduce console spam
+    if (criticalIssues.length > 0) {
+      console.error("🚨 Critical performance issues:", criticalIssues);
+    } else if (issues.length > 0 && typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') {
+      // Only log warnings in production
+      console.warn("⚠️ Performance warnings:", issues);
     }
   }
 
@@ -342,12 +347,15 @@ export class PerformanceMonitor {
   }
 
   private getDefaultThresholds(): PerformanceThresholds {
+    // More lenient thresholds for development environment
+    const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
     return {
-      fps: { warning: 45, critical: 30 },
-      frameTime: { warning: 22.22, critical: 33.33 },
-      memoryUsage: { warning: 100, critical: 200 },
-      renderTime: { warning: 10, critical: 20 },
-      updateTime: { warning: 5, critical: 10 },
+      fps: { warning: isDev ? 30 : 45, critical: isDev ? 20 : 30 },
+      frameTime: { warning: isDev ? 33.33 : 22.22, critical: isDev ? 50 : 33.33 },
+      memoryUsage: { warning: isDev ? 250 : 100, critical: isDev ? 400 : 200 },
+      renderTime: { warning: isDev ? 20 : 10, critical: isDev ? 40 : 20 },
+      updateTime: { warning: isDev ? 10 : 5, critical: isDev ? 20 : 10 },
       inputLatency: { warning: 50, critical: 100 },
     };
   }

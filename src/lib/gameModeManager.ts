@@ -100,6 +100,7 @@ export class GameModeManager {
         hitMine: false,
         gameOver: gameState.status === "won" || gameState.status === "lost",
         timeElapsed: gameState.startTime ? Date.now() - gameState.startTime : 0,
+        timeRemaining: gameState.timeRemaining ?? undefined,
         config: gameState.config,
       });
     }
@@ -121,6 +122,7 @@ export class GameModeManager {
         hitMine,
         gameOver: false,
         timeElapsed: gameState.startTime ? Date.now() - gameState.startTime : 0,
+        timeRemaining: gameState.timeRemaining ?? undefined,
         config: gameState.config,
       });
     }

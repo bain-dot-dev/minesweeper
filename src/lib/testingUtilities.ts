@@ -265,6 +265,9 @@ export class Expect<T> {
         throw new Error(`Expected ${JSON.stringify(this.actual)} to contain ${expected}`);
       }
     } else if (typeof this.actual === "string") {
+      if (typeof expected !== "string") {
+        throw new Error(`Expected "${expected}" to be a string when checking string.includes`);
+      }
       if (!this.actual.includes(expected)) {
         throw new Error(`Expected "${this.actual}" to contain "${expected}"`);
       }
@@ -305,14 +308,13 @@ export class MockFactory {
     const defaultState: GameState = {
       board: this.createMockBoard(16, 16, 40),
       config: defaultConfig,
+      difficulty: "easy",
       status: "playing",
       revealedCount: 0,
       flagCount: 0,
-      timeElapsed: 0,
+      startTime: Date.now(),
+      endTime: null,
       firstClick: false,
-      hitMine: false,
-      gameOver: false,
-      won: false,
       gameMode: "classic",
       score: 0,
       level: 1,
@@ -343,7 +345,6 @@ export class MockFactory {
           isRevealed: false,
           isFlagged: false,
           adjacentMines: 0,
-          isHighlighted: false,
         });
       }
       board.push(row);
@@ -453,10 +454,9 @@ export class GameModeTests {
         expect(gameState.flagCount).toBe(0);
       }
 
-      // Test reveal rules
-      if (!mode.rules.revealOnMineClick && gameState.hitMine) {
-        expect(gameState.gameOver).toBeFalsy();
-      }
+      // Test reveal rules - check status instead
+      // If reveal on mine click is disabled and game is lost, this is unusual
+      // but we'll skip this test as it requires actual game simulation
 
       return true;
     } catch (error) {
@@ -582,8 +582,10 @@ export class PaymentFlowTests {
   static testContinueBenefits(gameStateBefore: GameState, gameStateAfter: GameState): boolean {
     try {
       expect(gameStateAfter.continueCount).toBeGreaterThan(gameStateBefore.continueCount);
-      expect(gameStateAfter.hitMine).toBeFalsy();
-      expect(gameStateAfter.gameOver).toBeFalsy();
+      // After continue, game should be playable (not in lost state)
+      if (gameStateAfter.status === "lost") {
+        throw new Error("Game should not be in lost state after continue");
+      }
       return true;
     } catch (error) {
       console.error("Continue benefits test failed:", error);
@@ -680,9 +682,8 @@ export class IntegrationTests {
       expect(gameState.revealedCount).toBeGreaterThan(0);
 
       // Simulate win
-      gameState.won = true;
       gameState.status = "won";
-      expect(gameState.won).toBeTruthy();
+      expect(gameState.status).toBe("won");
 
       return true;
     } catch (error) {

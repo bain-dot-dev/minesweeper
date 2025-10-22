@@ -15,6 +15,7 @@ interface GameHeaderProps {
   onDifficultyChange: (difficulty: DifficultyLevel) => void;
   onReset: () => void;
   className?: string;
+  showDifficultySelector?: boolean;
 }
 
 export function GameHeader({
@@ -24,9 +25,13 @@ export function GameHeader({
   onDifficultyChange,
   onReset,
   className,
+  showDifficultySelector = true,
 }: GameHeaderProps) {
   const difficulties: DifficultyLevel[] = ["easy", "medium", "hard"];
   const isCritical = remainingMines < 0 || elapsed > 600000; // 10 minutes
+
+  // Debug log
+  console.log("🎯 GameHeader showDifficultySelector:", showDifficultySelector);
 
   return (
     <div className={cn("flex flex-col gap-4 w-full max-w-4xl", className)}>
@@ -76,27 +81,29 @@ export function GameHeader({
         </div>
       </div>
 
-      {/* Mission Difficulty Selector */}
-      <div className="flex gap-2 bg-gradient-to-r from-mi-black/90 to-mi-black/70 rounded-lg p-2 border border-mi-electric-blue/30!">
-        <span className="flex items-center px-3 text-xs font-bold text-mi-electric-blue uppercase tracking-wider">
-          Difficulty:
-        </span>
-        {difficulties.map((diff) => (
-          <button
-            key={diff}
-            onClick={() => onDifficultyChange(diff)}
-            className={cn(
-              "flex-1 py-2 px-4 rounded-md font-bold! text-sm! uppercase! tracking-wide! transition-all! duration-200!",
-              "focus:outline-none! focus:ring-2! focus:ring-mi-electric-blue!",
-              difficulty === diff
-                ? "bg-gradient-to-r! from-mi-red! to-mi-orange! text-white shadow-lg scale-105 border!"
-                : "bg-mi-black/50! text-mi-cyber-green! hover:bg-mi-black! hover:text-mi-yellow! border-mi-cyber-green/30!"
-            )}
-          >
-            {diff}
-          </button>
-        ))}
-      </div>
+      {/* Mission Difficulty Selector - Only show if enabled */}
+      {showDifficultySelector && (
+        <div className="flex gap-2 bg-gradient-to-r from-mi-black/90 to-mi-black/70 rounded-lg p-2 border border-mi-electric-blue/30!">
+          <span className="flex items-center px-3 text-xs font-bold text-mi-electric-blue uppercase tracking-wider">
+            Difficulty:
+          </span>
+          {difficulties.map((diff) => (
+            <button
+              key={diff}
+              onClick={() => onDifficultyChange(diff)}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-md font-bold! text-sm! uppercase! tracking-wide! transition-all! duration-200!",
+                "focus:outline-none! focus:ring-2! focus:ring-mi-electric-blue!",
+                difficulty === diff
+                  ? "bg-gradient-to-r! from-mi-red! to-mi-orange! text-white shadow-lg scale-105 border!"
+                  : "bg-mi-black/50! text-mi-cyber-green! hover:bg-mi-black! hover:text-mi-yellow! border-mi-cyber-green/30!"
+              )}
+            >
+              {diff}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

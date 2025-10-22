@@ -6,7 +6,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useMinesweeper } from "@/hooks/useMinesweeper";
 import { useMinesweeperWithModes } from "@/hooks/useMinesweeperWithModes";
 import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
@@ -15,7 +14,11 @@ import { GameModeSelector } from "./GameModeSelector";
 import { ContinueModal } from "./ContinueModal";
 import { DifficultyLevel } from "@/types/game";
 import { GameMode } from "@/types/gameMode";
-import { CLASSIC_MODE } from "@/config/gameModes";
+import {
+  CLASSIC_MODE_EASY,
+  CLASSIC_MODE_MEDIUM,
+  CLASSIC_MODE_HARD,
+} from "@/config/gameModes";
 import {
   useGameAudio,
   useGameStateAudio,
@@ -37,8 +40,8 @@ export function MinesweeperGame() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
-  const [currentMode, setCurrentMode] = useState<GameMode>(CLASSIC_MODE);
-  const [useGameModes, setUseGameModes] = useState(false);
+  const [currentMode, setCurrentMode] = useState<GameMode>(CLASSIC_MODE_MEDIUM);
+  const [useGameModes, setUseGameModes] = useState(true);
 
   // Game systems integration
   const gameSystems = useGameSystems();
@@ -47,9 +50,6 @@ export function MinesweeperGame() {
   useEffect(() => {
     gameSystems.initialize();
   }, [gameSystems]);
-
-  // Legacy hook for backward compatibility
-  const legacyGame = useMinesweeper("easy");
 
   // New game mode hook
   const {
@@ -119,6 +119,15 @@ export function MinesweeperGame() {
     // Track mode selection in game systems
     gameSystems.analytics.trackModeSelection(mode);
   };
+
+  // Debug current mode
+  useEffect(() => {
+    console.log("🎮 Current Mode Debug:", {
+      modeId: currentMode.id,
+      modeName: currentMode.name,
+      showDifficultySelector: currentMode.id === "classic",
+    });
+  }, [currentMode]);
 
   // Handle continue
   const handleContinue = () => {
@@ -269,19 +278,38 @@ export function MinesweeperGame() {
 
   const handleDifficultyChange = (difficulty: DifficultyLevel) => {
     console.log("🎛️ Difficulty changed:", difficulty);
-    if (useGameModes) {
-      // Convert difficulty to game mode
-      const modeMap: Record<string, string> = {
-        easy: "classic",
-        medium: "time-attack",
-        hard: "hardcore",
-      };
-      const modeId = modeMap[difficulty] || "classic";
-      // This would need to be implemented to find mode by ID
-      console.log("🎮 Would switch to mode:", modeId);
-    } else {
-      legacyGame.changeDifficulty(difficulty);
+
+    // Check if we're in a classic mode variant
+    const isClassicMode = currentMode.id.startsWith("classic");
+
+    if (isClassicMode) {
+      // Switch to the appropriate classic mode variant
+      let newMode: GameMode;
+      switch (difficulty) {
+        case "easy":
+          newMode = CLASSIC_MODE_EASY;
+          break;
+        case "medium":
+          newMode = CLASSIC_MODE_MEDIUM;
+          break;
+        case "hard":
+          newMode = CLASSIC_MODE_HARD;
+          break;
+        default:
+          newMode = CLASSIC_MODE_MEDIUM;
+      }
+
+      console.log("🎮 Switching to classic mode variant:", {
+        modeId: newMode.id,
+        boardSize: newMode.config.boardSize,
+        mineCount: newMode.config.mineCount,
+      });
+      setCurrentMode(newMode);
+      setUseGameModes(true);
+
+      // The hook will automatically reset when currentMode changes
     }
+
     setShowModal(false);
     playDifficultyChange();
   };
@@ -411,6 +439,7 @@ export function MinesweeperGame() {
         difficulty={gameState.difficulty}
         onDifficultyChange={handleDifficultyChange}
         onReset={handleReset}
+        showDifficultySelector={currentMode.id.startsWith("classic")}
       />
 
       {/* Game Mode Toggle Button */}

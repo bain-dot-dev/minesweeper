@@ -41,8 +41,8 @@ export function useMinesweeperWithModes(
   initialMode?: GameMode
 ): UseMinesweeperWithModesReturn {
   const mode = initialMode || getDefaultGameMode();
-  const [modeManager, setModeManager] = useState<GameModeManager>(
-    () => createGameModeManager(mode)
+  const [modeManager, setModeManager] = useState<GameModeManager>(() =>
+    createGameModeManager(mode)
   );
 
   const timer = useTimer();
@@ -60,7 +60,7 @@ export function useMinesweeperWithModes(
     });
   });
 
-  // Update time remaining for timed modes
+  // Track time remaining for timed modes
   useEffect(() => {
     if (
       gameState.status === "playing" &&
@@ -99,6 +99,39 @@ export function useMinesweeperWithModes(
     }
   }, [gameState.status, modeManager, timer]);
 
+  // Update when initialMode changes (for difficulty changes)
+  useEffect(() => {
+    if (initialMode && initialMode.id !== modeManager.getModeId()) {
+      console.log("🔄 Mode changed externally, updating...", {
+        from: modeManager.getModeId(),
+        to: initialMode.id,
+        boardSize: initialMode.config.boardSize,
+        mineCount: initialMode.config.mineCount,
+      });
+
+      const newModeManager = createGameModeManager(initialMode);
+      setModeManager(newModeManager);
+
+      const config = newModeManager.getBoardConfig(1);
+      console.log("📐 New board config:", config);
+
+      const newState = newModeManager.initializeGameState({
+        board: createEmptyBoard(config.width, config.height),
+        streak: 0,
+      });
+      setGameState(newState);
+
+      timer.reset();
+
+      // Clear timer interval
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMode?.id]);
+
   // Handle cell left click (reveal)
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -123,7 +156,7 @@ export function useMinesweeperWithModes(
         let newRevealedCount = prev.revealedCount;
         let newStatus = prev.status;
         let newFirstClick = prev.firstClick;
-        let newMoveCount = prev.moveCount + 1;
+        const newMoveCount = prev.moveCount + 1;
         let newScore = prev.score;
 
         // First click: place mines and start timer

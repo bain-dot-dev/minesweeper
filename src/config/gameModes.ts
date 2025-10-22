@@ -388,6 +388,89 @@ export const PATTERN_MODE: GameMode = {
 // ============================================================================
 // CLASSIC MODE (Default from original game)
 // ============================================================================
+// RELAXED MODES
+// ============================================================================
+
+export const CLASSIC_MODE_EASY: GameMode = {
+  id: "classic-easy",
+  name: "Classic Mission (Easy)",
+  category: "relaxed",
+  description: "Original minesweeper experience - Easy difficulty",
+  icon: "🎮💎",
+  config: {
+    boardSize: { width: 8, height: 8 },
+    mineCount: 10,
+    specialRules: [],
+  },
+  rules: {
+    allowFlags: true,
+    revealOnMineClick: true,
+    numberVisibility: "always",
+    firstClickSafe: true,
+    cascadeReveal: true,
+  },
+  scoring: {
+    basePoints: 500,
+    timeBonus: (timeRemaining) => timeRemaining * 3,
+  },
+  continueAllowed: true,
+  continueCost: 25,
+  enabled: true,
+};
+
+export const CLASSIC_MODE_MEDIUM: GameMode = {
+  id: "classic-medium",
+  name: "Classic Mission (Medium)",
+  category: "relaxed",
+  description: "Original minesweeper experience - Medium difficulty",
+  icon: "🎮💎",
+  config: {
+    boardSize: { width: 16, height: 16 },
+    mineCount: 40,
+    specialRules: [],
+  },
+  rules: {
+    allowFlags: true,
+    revealOnMineClick: true,
+    numberVisibility: "always",
+    firstClickSafe: true,
+    cascadeReveal: true,
+  },
+  scoring: {
+    basePoints: 1000,
+    timeBonus: (timeRemaining) => timeRemaining * 5,
+  },
+  continueAllowed: true,
+  continueCost: 50,
+  enabled: true,
+};
+
+export const CLASSIC_MODE_HARD: GameMode = {
+  id: "classic-hard",
+  name: "Classic Mission (Hard)",
+  category: "relaxed",
+  description: "Original minesweeper experience - Hard difficulty",
+  icon: "🎮💎",
+  config: {
+    boardSize: { width: 30, height: 16 },
+    mineCount: 99,
+    specialRules: [],
+  },
+  rules: {
+    allowFlags: true,
+    revealOnMineClick: true,
+    numberVisibility: "always",
+    firstClickSafe: true,
+    cascadeReveal: true,
+  },
+  scoring: {
+    basePoints: 2000,
+    timeBonus: (timeRemaining) => timeRemaining * 10,
+  },
+  continueAllowed: true,
+  continueCost: 100,
+  enabled: true,
+};
 
 export const CLASSIC_MODE: GameMode = {
   id: "classic",

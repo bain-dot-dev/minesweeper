@@ -15,7 +15,7 @@ export default async function Home() {
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-mi-cyber-green animate-scan opacity-50"></div>
 
           {/* Desktop Layout */}
-          <div className="sm:hidden flex items-center justify-between px-4 py-3">
+          <div className="hidden md:flex items-center justify-between px-4 py-3">
             {/* Mission Title */}
             <div className="flex items-center gap-3">
               <div className="relative">

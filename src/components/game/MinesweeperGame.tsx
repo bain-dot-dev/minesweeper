@@ -354,7 +354,7 @@ export function MinesweeperGame() {
       <AudioLoadingIndicator />
 
       {/* Audio Controls - Desktop */}
-      <div className="sm:hidden flex fixed top-4 right-4 z-50 gap-2 items-center">
+      <div className="hidden md:flex fixed top-4 right-4 z-50 gap-2 items-center">
         <CompactAudioControls />
         <AudioSettings />
       </div>

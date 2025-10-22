@@ -62,11 +62,18 @@ export class PerformanceMonitor {
   private droppedFrames: number = 0;
   private thresholds: PerformanceThresholds;
   private config: OptimizationConfig;
+  private rafId: number | null = null;
+  private lastMetricTime: number = 0;
+  private metricInterval: number = 1000; // Record metrics every 1 second instead of every frame
 
-  constructor() {
+  constructor(autoStart: boolean = false) {
     this.thresholds = this.getDefaultThresholds();
     this.config = this.getDefaultConfig();
-    this.startMonitoring();
+
+    // Only auto-start in production or if explicitly requested
+    if (autoStart || (typeof process !== 'undefined' && process.env.NODE_ENV === 'production')) {
+      this.startMonitoring();
+    }
   }
 
   /**
@@ -91,6 +98,10 @@ export class PerformanceMonitor {
    */
   stopMonitoring(): void {
     this.isMonitoring = false;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
     console.log("📊 Performance monitoring stopped");
   }
 
@@ -113,9 +124,9 @@ export class PerformanceMonitor {
 
     this.metrics.push(fullMetric);
 
-    // Keep only last 1000 metrics
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
+    // Keep only last 60 metrics (60 seconds at 1 metric/second)
+    if (this.metrics.length > 60) {
+      this.metrics.shift(); // Remove oldest metric
     }
 
     // Check for performance issues
@@ -182,9 +193,15 @@ export class PerformanceMonitor {
   // ============================================================================
 
   private monitorFrame(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      if (this.rafId !== null) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      return;
+    }
 
-      const currentTime = performance.now();
+    const currentTime = performance.now();
     const frameTime = currentTime - this.lastFrameTime;
     const fps = 1000 / frameTime;
 
@@ -193,18 +210,21 @@ export class PerformanceMonitor {
       this.droppedFrames++;
     }
 
-    // Record frame metrics
-    this.recordMetric({
-      fps,
-      frameTime,
-      memoryUsage: this.getMemoryUsage(),
-    });
+    // Only record metrics at the specified interval (default: 1 second)
+    if (currentTime - this.lastMetricTime >= this.metricInterval) {
+      this.recordMetric({
+        fps,
+        frameTime,
+        memoryUsage: this.getMemoryUsage(),
+      });
+      this.lastMetricTime = currentTime;
+    }
 
     this.lastFrameTime = currentTime;
     this.frameCount++;
 
     // Continue monitoring
-    requestAnimationFrame(() => this.monitorFrame());
+    this.rafId = requestAnimationFrame(() => this.monitorFrame());
   }
 
   private getMemoryUsage(): number {
@@ -652,6 +672,7 @@ export function usePerformanceOptimization() {
 }
 
 // Singleton instances
-export const performanceMonitor = new PerformanceMonitor();
+// Don't auto-start in development to prevent performance issues
+export const performanceMonitor = new PerformanceMonitor(false);
 export const performanceOptimizer = new PerformanceOptimizer();
 export const memoryManager = new MemoryManager();

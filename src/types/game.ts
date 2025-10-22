@@ -37,6 +37,17 @@ export interface GameState {
   startTime: number | null;
   endTime: number | null;
   firstClick: boolean;
+
+  // Game Mode Extensions
+  gameMode: string; // Mode ID
+  score: number; // Current score
+  level: number; // Current level (for progressive modes)
+  moveCount: number; // Number of moves made
+  timeRemaining: number | null; // Time remaining (for timed modes)
+  continueCount: number; // Number of continues used
+  continueTimestamps: number[]; // Timestamps of continues
+  roundNumber: number; // Current round (for multi-round modes)
+  streak: number; // Current win streak
 }
 
 export interface GameStats {

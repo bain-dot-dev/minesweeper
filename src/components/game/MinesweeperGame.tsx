@@ -450,6 +450,8 @@ export function MinesweeperGame() {
         onDifficultyChange={handleDifficultyChange}
         onReset={handleReset}
         showDifficultySelector={currentMode.id.startsWith("classic")}
+        timeRemaining={gameState.timeRemaining}
+        isTimedMode={modeManager.isTimedMode()}
       />
 
       {/* Game Mode Toggle Button */}

@@ -62,11 +62,19 @@ export function useMinesweeperWithModes(
 
   // Track time remaining for timed modes
   useEffect(() => {
+    // Clear any existing interval first
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
     if (
       gameState.status === "playing" &&
       modeManager.isTimedMode() &&
       gameState.timeRemaining !== null
     ) {
+      console.log("⏱️ Starting countdown timer:", gameState.timeRemaining);
+
       timerIntervalRef.current = setInterval(() => {
         setGameState((prev) => {
           if (prev.timeRemaining === null) return prev;
@@ -75,6 +83,7 @@ export function useMinesweeperWithModes(
 
           // Check if time ran out
           if (newTimeRemaining === 0 && prev.status === "playing") {
+            console.log("⏰ TIME'S UP! Game Over!");
             timer.stop();
             return {
               ...prev,
@@ -82,6 +91,11 @@ export function useMinesweeperWithModes(
               status: "lost",
               endTime: Date.now(),
             };
+          }
+
+          // Log every 10 seconds for debugging
+          if (newTimeRemaining % 10 === 0) {
+            console.log("⏱️ Time remaining:", newTimeRemaining);
           }
 
           return {
@@ -94,10 +108,14 @@ export function useMinesweeperWithModes(
       return () => {
         if (timerIntervalRef.current) {
           clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
         }
       };
+    } else if (gameState.status !== "playing") {
+      // Game is not playing, clear the interval
+      console.log("⏱️ Game not playing, clearing countdown timer");
     }
-  }, [gameState.status, modeManager, timer]);
+  }, [gameState.status, gameState.timeRemaining, modeManager, timer]);
 
   // Update when initialMode changes (for difficulty changes)
   useEffect(() => {

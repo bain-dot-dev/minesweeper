@@ -16,6 +16,8 @@ interface GameHeaderProps {
   onReset: () => void;
   className?: string;
   showDifficultySelector?: boolean;
+  timeRemaining?: number | null; // For countdown timers
+  isTimedMode?: boolean; // Indicates if this is a timed mode
 }
 
 export function GameHeader({
@@ -26,12 +28,31 @@ export function GameHeader({
   onReset,
   className,
   showDifficultySelector = true,
+  timeRemaining,
+  isTimedMode = false,
 }: GameHeaderProps) {
   const difficulties: DifficultyLevel[] = ["easy", "medium", "hard"];
-  const isCritical = remainingMines < 0 || elapsed > 600000; // 10 minutes
+
+  // For timed modes, use timeRemaining; otherwise use elapsed
+  const displayTime =
+    isTimedMode && timeRemaining !== null && timeRemaining !== undefined
+      ? timeRemaining * 1000 // Convert seconds to milliseconds for formatTime
+      : elapsed;
+
+  // Critical state: low time remaining or too much time elapsed
+  const isCritical = isTimedMode
+    ? timeRemaining !== null &&
+      timeRemaining !== undefined &&
+      timeRemaining < 30
+    : remainingMines < 0 || elapsed > 600000;
 
   // Debug log
-  console.log("🎯 GameHeader showDifficultySelector:", showDifficultySelector);
+  console.log("🎯 GameHeader:", {
+    showDifficultySelector,
+    isTimedMode,
+    timeRemaining,
+    displayTime,
+  });
 
   return (
     <div className={cn("flex flex-col gap-4 w-full max-w-4xl", className)}>
@@ -40,7 +61,7 @@ export function GameHeader({
         {/* Timer Display */}
         <div className="flex flex-col items-start gap-1">
           <span className="text-xs text-mi-cyber-green uppercase tracking-wider opacity-70">
-            Mission Time
+            {isTimedMode ? "Time Remaining" : "Mission Time"}
           </span>
           <div
             className={cn(
@@ -50,7 +71,7 @@ export function GameHeader({
           >
             <Timer className="w-5 h-5" />
             <span className="text-2xl font-mono font-bold tabular-nums">
-              {formatTime(elapsed)}
+              {formatTime(displayTime)}
             </span>
           </div>
         </div>
